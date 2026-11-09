@@ -20,7 +20,6 @@ import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -40,6 +39,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -69,10 +69,12 @@ fun WeightLoggingDialog(
 
     AlertDialog(
         onDismissRequest = onDismissRequest,
+        shape = MaterialTheme.shapes.extraLarge,
         title = {
             Text(
-                text = if (uiState.isEditing) "Edit Weight Entry" else "Log Weight",
-                style = MaterialTheme.typography.titleLarge
+                text = if (uiState.isEditing) "Edit Weight Entry" else "Log Body Weight",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
             )
         },
         text = {
@@ -82,7 +84,7 @@ fun WeightLoggingDialog(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Unit Selector
+                // Unit Selector Segmented Row
                 SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                     WeightUnit.entries.forEachIndexed { index, unit ->
                         SegmentedButton(
@@ -93,20 +95,22 @@ fun WeightLoggingDialog(
                                 count = WeightUnit.entries.size
                             )
                         ) {
-                            Text(unit.displayName)
+                            Text(unit.displayName, fontWeight = FontWeight.SemiBold)
                         }
                     }
                 }
 
-                // Weight Input Field
+                // Expressive Weight Input Field
                 OutlinedTextField(
                     value = uiState.weightInput,
                     onValueChange = onWeightInputChanged,
                     label = { Text("Weight (${uiState.selectedUnit.symbol})") },
-                    placeholder = { Text(if (uiState.selectedUnit == WeightUnit.KG) "e.g., 70.5" else "e.g., 155.4") },
+                    placeholder = { Text(if (uiState.selectedUnit == WeightUnit.KG) "70.5" else "155.4") },
+                    textStyle = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     isError = uiState.validationError != null,
                     singleLine = true,
+                    shape = MaterialTheme.shapes.medium,
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -119,30 +123,30 @@ fun WeightLoggingDialog(
                     )
                 }
 
-                // Date & Time Selectors
+                // Date & Time Picker Triggers
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     OutlinedButton(
                         onClick = { showDatePicker = true },
+                        shape = MaterialTheme.shapes.medium,
                         modifier = Modifier.weight(1f)
                     ) {
                         Icon(Icons.Default.CalendarToday, contentDescription = "Pick Date")
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text(DateTimeUtils.formatDate(uiState.timestamp))
+                        Text(DateTimeUtils.formatDate(uiState.timestamp), style = MaterialTheme.typography.labelMedium)
                     }
-
-                    Spacer(modifier = Modifier.width(8.dp))
 
                     OutlinedButton(
                         onClick = { showTimePicker = true },
+                        shape = MaterialTheme.shapes.medium,
                         modifier = Modifier.weight(1f)
                     ) {
                         Icon(Icons.Default.Schedule, contentDescription = "Pick Time")
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text(DateTimeUtils.formatTime(uiState.timestamp))
+                        Text(DateTimeUtils.formatTime(uiState.timestamp), style = MaterialTheme.typography.labelMedium)
                     }
                 }
 
@@ -151,8 +155,9 @@ fun WeightLoggingDialog(
                     value = uiState.notesInput,
                     onValueChange = onNotesInputChanged,
                     label = { Text("Notes (Optional)") },
-                    placeholder = { Text("e.g., Morning weigh-in, after workout") },
+                    placeholder = { Text("e.g., Morning weigh-in, post workout") },
                     maxLines = 3,
+                    shape = MaterialTheme.shapes.medium,
                     modifier = Modifier.fillMaxWidth()
                 )
             }
@@ -160,9 +165,10 @@ fun WeightLoggingDialog(
         confirmButton = {
             Button(
                 onClick = { onSaveEntry(false) },
-                enabled = !uiState.isLoading
+                enabled = !uiState.isLoading,
+                shape = MaterialTheme.shapes.medium
             ) {
-                Text(if (uiState.isEditing) "Update" else "Save")
+                Text(if (uiState.isEditing) "Update" else "Save Entry", fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {
@@ -183,7 +189,6 @@ fun WeightLoggingDialog(
                 TextButton(
                     onClick = {
                         datePickerState.selectedDateMillis?.let { selectedDate ->
-                            // Preserve local time
                             val selectedLocalDate = Instant.ofEpochMilli(selectedDate)
                                 .atZone(ZoneId.of("UTC"))
                                 .toLocalDate()
@@ -196,7 +201,7 @@ fun WeightLoggingDialog(
                         showDatePicker = false
                     }
                 ) {
-                    Text("OK")
+                    Text("OK", fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
@@ -227,8 +232,9 @@ fun WeightLoggingDialog(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Select Time",
-                        style = MaterialTheme.typography.labelMedium,
+                        text = "Select Measurement Time",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(bottom = 20.dp)
                     )
                     TimePicker(state = timePickerState)
@@ -242,7 +248,7 @@ fun WeightLoggingDialog(
                             Text("Cancel")
                         }
                         Spacer(modifier = Modifier.width(8.dp))
-                        TextButton(
+                        Button(
                             onClick = {
                                 val newLdt = LocalDateTime.of(
                                     currentLdt.toLocalDate(),
@@ -253,9 +259,10 @@ fun WeightLoggingDialog(
                                 )
                                 onTimestampSelected(DateTimeUtils.toEpochMillis(newLdt))
                                 showTimePicker = false
-                            }
+                            },
+                            shape = MaterialTheme.shapes.medium
                         ) {
-                            Text("OK")
+                            Text("OK", fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -263,21 +270,25 @@ fun WeightLoggingDialog(
         }
     }
 
-    // Duplicate Warning Dialog
+    // Overwrite / Duplicate Confirmation Dialog
     if (uiState.duplicateWarningEntry != null) {
         AlertDialog(
             onDismissRequest = { onSaveEntry(false) },
-            title = { Text("Duplicate Entry Detected") },
+            shape = MaterialTheme.shapes.large,
+            title = { Text("Duplicate Measurement Time") },
             text = {
                 Text(
                     "A measurement of ${uiState.duplicateWarningEntry.getFormattedWeight(uiState.selectedUnit)} " +
-                            "was already recorded for ${DateTimeUtils.formatDateTime(uiState.duplicateWarningEntry.timestamp)}. " +
-                            "Would you like to overwrite/update this entry or save anyway?"
+                            "was already logged for ${DateTimeUtils.formatDateTime(uiState.duplicateWarningEntry.timestamp)}. " +
+                            "Would you like to save this duplicate record anyway?"
                 )
             },
             confirmButton = {
-                Button(onClick = { onSaveEntry(true) }) {
-                    Text("Save Anyway")
+                Button(
+                    onClick = { onSaveEntry(true) },
+                    shape = MaterialTheme.shapes.medium
+                ) {
+                    Text("Save Anyway", fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {

@@ -1,0 +1,80 @@
+package com.johnpaulpatigas.weightcast.feature.dashboard
+
+import com.johnpaulpatigas.weightcast.core.model.WeightUnit
+import com.johnpaulpatigas.weightcast.domain.model.TimeRange
+import com.johnpaulpatigas.weightcast.domain.model.WeightEntry
+import com.johnpaulpatigas.weightcast.domain.usecase.FakeGoalRepository
+import com.johnpaulpatigas.weightcast.domain.usecase.FakeWeightRepository
+import com.johnpaulpatigas.weightcast.domain.usecase.GetDashboardSummaryUseCase
+import com.johnpaulpatigas.weightcast.domain.usecase.GetHistoricalChartDataUseCase
+import com.johnpaulpatigas.weightcast.feature.weight_logging.FakeUserPreferencesRepository
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Before
+import org.junit.Test
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class DashboardViewModelTest {
+
+    private val testDispatcher = StandardTestDispatcher()
+    private lateinit var weightRepository: FakeWeightRepository
+    private lateinit var goalRepository: FakeGoalRepository
+    private lateinit var userPreferencesRepository: FakeUserPreferencesRepository
+    private lateinit var viewModel: DashboardViewModel
+
+    @Before
+    fun setUp() {
+        Dispatchers.setMain(testDispatcher)
+        weightRepository = FakeWeightRepository()
+        goalRepository = FakeGoalRepository()
+        userPreferencesRepository = FakeUserPreferencesRepository()
+
+        val getSummaryUseCase = GetDashboardSummaryUseCase(weightRepository, goalRepository)
+        val getChartDataUseCase = GetHistoricalChartDataUseCase(weightRepository)
+
+        viewModel = DashboardViewModel(
+            getDashboardSummaryUseCase = getSummaryUseCase,
+            getHistoricalChartDataUseCase = getChartDataUseCase,
+            userPreferencesRepository = userPreferencesRepository
+        )
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
+    }
+
+    @Test
+    fun `initial ui state loads summary and user preferred unit`() = runTest {
+        testDispatcher.scheduler.advanceUntilIdle()
+        val state = viewModel.uiState.value
+        assertFalse(state.isLoading)
+        assertEquals(WeightUnit.KG, state.displayUnit)
+        assertEquals(TimeRange.DAYS_30, state.selectedTimeRange)
+    }
+
+    @Test
+    fun `onTimeRangeSelected updates selectedTimeRange`() = runTest {
+        viewModel.onTimeRangeSelected(TimeRange.DAYS_90)
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals(TimeRange.DAYS_90, viewModel.uiState.value.selectedTimeRange)
+    }
+
+    @Test
+    fun `when weight entries exist, chart points and summary update`() = runTest {
+        val now = System.currentTimeMillis()
+        weightRepository.addEntry(WeightEntry(weightInKg = 75.0, originalUnit = WeightUnit.KG, timestamp = now))
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertEquals(75.0, state.summary.currentWeightInKg!!, 0.001)
+        assertEquals(1, state.chartPoints.size)
+    }
+}

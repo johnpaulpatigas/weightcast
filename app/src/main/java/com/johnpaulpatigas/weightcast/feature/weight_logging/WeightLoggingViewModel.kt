@@ -1,0 +1,213 @@
+package com.johnpaulpatigas.weightcast.feature.weight_logging
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.johnpaulpatigas.weightcast.core.model.WeightUnit
+import com.johnpaulpatigas.weightcast.core.preferences.UserPreferencesRepository
+import com.johnpaulpatigas.weightcast.core.util.WeightConverter
+import com.johnpaulpatigas.weightcast.domain.model.WeightEntry
+import com.johnpaulpatigas.weightcast.domain.usecase.AddWeightEntryUseCase
+import com.johnpaulpatigas.weightcast.domain.usecase.DeleteWeightEntryUseCase
+import com.johnpaulpatigas.weightcast.domain.usecase.DuplicateTimestampException
+import com.johnpaulpatigas.weightcast.domain.usecase.GetWeightEntriesUseCase
+import com.johnpaulpatigas.weightcast.domain.usecase.UpdateWeightEntryUseCase
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import javax.inject.Inject
+
+@HiltViewModel
+class WeightLoggingViewModel @Inject constructor(
+    private val getWeightEntriesUseCase: GetWeightEntriesUseCase,
+    private val addWeightEntryUseCase: AddWeightEntryUseCase,
+    private val updateWeightEntryUseCase: UpdateWeightEntryUseCase,
+    private val deleteWeightEntryUseCase: DeleteWeightEntryUseCase,
+    private val userPreferencesRepository: UserPreferencesRepository
+) : ViewModel() {
+
+    private val _uiState = MutableStateFlow(WeightLoggingUiState())
+    val uiState: StateFlow<WeightLoggingUiState> = _uiState.asStateFlow()
+
+    init {
+        loadUserPreferredUnit()
+        observeWeightEntries()
+    }
+
+    private fun loadUserPreferredUnit() {
+        viewModelScope.launch {
+            userPreferencesRepository.preferredUnit.collect { unit ->
+                _uiState.update { currentState ->
+                    if (!currentState.isEditing && currentState.weightInput.isEmpty()) {
+                        currentState.copy(selectedUnit = unit)
+                    } else {
+                        currentState
+                    }
+                }
+            }
+        }
+    }
+
+    private fun observeWeightEntries() {
+        viewModelScope.launch {
+            getWeightEntriesUseCase().collect { entriesList ->
+                _uiState.update { it.copy(entries = entriesList, isLoading = false) }
+            }
+        }
+    }
+
+    fun onOpenAddForm() {
+        _uiState.update {
+            it.copy(
+                isFormOpen = true,
+                isEditing = false,
+                editingEntryId = null,
+                weightInput = "",
+                timestamp = System.currentTimeMillis(),
+                notesInput = "",
+                validationError = null,
+                duplicateWarningEntry = null,
+                isSavedSuccessfully = false
+            )
+        }
+    }
+
+    fun onOpenEditForm(entry: WeightEntry) {
+        val displayWeight = WeightConverter.roundTo(
+            WeightConverter.fromCanonicalKg(entry.weightInKg, entry.originalUnit),
+            1
+        ).toString()
+
+        _uiState.update {
+            it.copy(
+                isFormOpen = true,
+                isEditing = true,
+                editingEntryId = entry.id,
+                weightInput = displayWeight,
+                selectedUnit = entry.originalUnit,
+                timestamp = entry.timestamp,
+                notesInput = entry.notes ?: "",
+                validationError = null,
+                duplicateWarningEntry = null,
+                isSavedSuccessfully = false
+            )
+        }
+    }
+
+    fun onCloseForm() {
+        _uiState.update {
+            it.copy(
+                isFormOpen = false,
+                validationError = null,
+                duplicateWarningEntry = null
+            )
+        }
+    }
+
+    fun onWeightInputChanged(input: String) {
+        _uiState.update { it.copy(weightInput = input, validationError = null) }
+    }
+
+    fun onUnitSelected(unit: WeightUnit) {
+        val currentInput = _uiState.value.weightInput.toDoubleOrNull()
+        val currentUnit = _uiState.value.selectedUnit
+
+        if (currentInput != null && currentInput > 0.0 && currentUnit != unit) {
+            val converted = WeightConverter.convert(currentInput, currentUnit, unit)
+            val roundedStr = WeightConverter.roundTo(converted, 1).toString()
+            _uiState.update { it.copy(selectedUnit = unit, weightInput = roundedStr) }
+        } else {
+            _uiState.update { it.copy(selectedUnit = unit) }
+        }
+
+        viewModelScope.launch {
+            userPreferencesRepository.setPreferredUnit(unit)
+        }
+    }
+
+    fun onTimestampSelected(timestamp: Long) {
+        _uiState.update { it.copy(timestamp = timestamp, validationError = null) }
+    }
+
+    fun onNotesInputChanged(notes: String) {
+        _uiState.update { it.copy(notesInput = notes) }
+    }
+
+    fun onSaveEntry(allowDuplicate: Boolean = false) {
+        val state = _uiState.value
+        val weightVal = state.weightInput.toDoubleOrNull()
+
+        if (weightVal == null || weightVal <= 0.0) {
+            _uiState.update { it.copy(validationError = "Please enter a valid positive weight.") }
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, validationError = null) }
+
+            val result = if (state.isEditing && state.editingEntryId != null) {
+                updateWeightEntryUseCase(
+                    id = state.editingEntryId,
+                    weightValue = weightVal,
+                    unit = state.selectedUnit,
+                    timestamp = state.timestamp,
+                    notes = state.notesInput,
+                    allowDuplicate = allowDuplicate
+                )
+            } else {
+                addWeightEntryUseCase(
+                    weightValue = weightVal,
+                    unit = state.selectedUnit,
+                    timestamp = state.timestamp,
+                    notes = state.notesInput,
+                    allowDuplicate = allowDuplicate
+                )
+            }
+
+            result.fold(
+                onSuccess = {
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            isFormOpen = false,
+                            isSavedSuccessfully = true,
+                            duplicateWarningEntry = null
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    if (error is DuplicateTimestampException) {
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                duplicateWarningEntry = error.existingEntry
+                            )
+                        }
+                    } else {
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                validationError = error.message ?: "Failed to save weight entry."
+                            )
+                        }
+                    }
+                }
+            )
+        }
+    }
+
+    fun onDeleteEntry(id: Long) {
+        viewModelScope.launch {
+            deleteWeightEntryUseCase(id)
+            if (_uiState.value.editingEntryId == id) {
+                onCloseForm()
+            }
+        }
+    }
+
+    fun onDismissDuplicateWarning() {
+        _uiState.update { it.copy(duplicateWarningEntry = null) }
+    }
+}

@@ -19,10 +19,8 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MonitorWeight
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -30,7 +28,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.SuggestionChip
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -61,21 +59,28 @@ fun WeightLoggingScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("WeightCast Logs") },
+                title = {
+                    Text(
+                        text = "Weight Logs",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
+            ExtendedFloatingActionButton(
                 onClick = { viewModel.onOpenAddForm() },
+                icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                text = { Text("New Entry", fontWeight = FontWeight.Bold) },
                 containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Weight Log")
-            }
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+                shape = MaterialTheme.shapes.large
+            )
         },
         modifier = modifier
     ) { paddingValues ->
@@ -136,11 +141,11 @@ fun WeightLoggingScreen(
                         Text(
                             text = "No Weight Logs Recorded",
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = FontWeight.Bold
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Tap the '+' button to record your body weight.",
+                            text = "Tap '+ New Entry' to record your body weight.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -218,15 +223,16 @@ fun WeightEntryItem(
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit
 ) {
-    Card(
+    Surface(
         modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+        shape = MaterialTheme.shapes.medium,
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+        tonalElevation = 1.dp
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -234,30 +240,37 @@ fun WeightEntryItem(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = entry.getFormattedWeight(displayUnit),
-                        style = MaterialTheme.typography.headlineSmall,
+                        style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
 
                     if (entry.originalUnit != displayUnit) {
                         Spacer(modifier = Modifier.width(8.dp))
-                        SuggestionChip(
-                            onClick = {},
-                            label = { Text("logged in ${entry.originalUnit.symbol}") }
-                        )
+                        Surface(
+                            shape = MaterialTheme.shapes.extraSmall,
+                            color = MaterialTheme.colorScheme.secondaryContainer
+                        ) {
+                            Text(
+                                text = "logged in ${entry.originalUnit.symbol}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(2.dp))
 
                 Text(
                     text = DateTimeUtils.formatDateTime(entry.timestamp),
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                if (!entry.notes.isNull_or_blank()) {
-                    Spacer(modifier = Modifier.height(4.dp))
+                if (!entry.notes.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         text = "Note: ${entry.notes}",
                         style = MaterialTheme.typography.bodySmall,
@@ -267,17 +280,21 @@ fun WeightEntryItem(
             }
 
             Row {
-                IconButton(onClick = onEditClick) {
+                IconButton(
+                    onClick = onEditClick
+                ) {
                     Icon(
                         imageVector = Icons.Default.Edit,
-                        contentDescription = "Edit entry",
+                        contentDescription = "Edit entry recorded on ${DateTimeUtils.formatDateTime(entry.timestamp)}",
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
-                IconButton(onClick = onDeleteClick) {
+                IconButton(
+                    onClick = onDeleteClick
+                ) {
                     Icon(
                         imageVector = Icons.Default.Delete,
-                        contentDescription = "Delete entry",
+                        contentDescription = "Delete entry recorded on ${DateTimeUtils.formatDateTime(entry.timestamp)}",
                         tint = MaterialTheme.colorScheme.error
                     )
                 }
@@ -285,5 +302,3 @@ fun WeightEntryItem(
         }
     }
 }
-
-private fun String?.isNull_or_blank(): Boolean = this == null || this.trim().isEmpty()

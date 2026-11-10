@@ -38,19 +38,22 @@ For prepared daily measurements $(t_i, w_i)$:
 | `MODERATE_CONFIDENCE` | $N \ge 5$ | $\ge 7$ days | $\ge 40\%$ |
 | `HIGH_CONFIDENCE` | $N \ge 10$ | $\ge 14$ days | $\ge 50\%$ |
 
-- **Coverage Ratio Definition**:
+- **Coverage Ratio Definition & Heuristic Scope**:
   $$\text{coverageRatio} = \frac{N}{\lfloor\text{timeSpanDays}\rfloor + 1}$$
-  Prevents datasets with sparse multi-month gaps from being misclassified as `HIGH_CONFIDENCE`.
+  Coverage ratio is a temporal measurement-density heuristic (ratio of daily measurements present over total calendar days in span). It prevents datasets with sparse multi-month gaps from being misclassified as `HIGH_CONFIDENCE`. It is not a calibrated probability of forecast accuracy.
+- **Evaluation Timestamp Windowing**: All sufficiency and trend evaluations strictly filter measurements to $t_i \le t_{\text{eval}}$ (zero future-data leakage).
 
 ## 5. Trend Stability Diagnostics (`TrendStabilityEvaluator`)
 Stability evaluates trajectory consistency independently from data volume:
 - **Subwindow Slope Comparison**: Prepared measurements are split into chronological halves. Theil-Sen regression is evaluated on each half ($\hat{\beta}_{\text{first}}$, $\hat{\beta}_{\text{second}}$).
-- **Direction Reversal**: Flagged if $\hat{\beta}_{\text{first}} \cdot \hat{\beta}_{\text{second}} < 0$ and both $|\Delta W_{\text{sub}}| \ge 0.15$ kg/week.
+- **Direction Reversal**: Flagged if $\hat{\beta}_{\text{first}} \cdot \hat{\beta}_{\text{second}} < 0$ and both $|\Delta W_{\text{sub}}| \ge 0.25$ kg/week.
 - **Classification Rules**:
   - `UNSTABLE`: Reversal detected OR $|\Delta W_{\text{first}} - \Delta W_{\text{second}}| > 0.75$ kg/week OR $s_e > 1.2$ kg.
   - `MODERATE`: $|\Delta W_{\text{first}} - \Delta W_{\text{second}}| > 0.30$ kg/week OR $s_e > 0.6$ kg.
   - `STABLE`: Consistent direction, subwindow slope diff $\le 0.30$ kg/week, and $s_e \le 0.6$ kg.
 
-## 6. Theoretical Robustness & Performance
-- **Theoretical Breakdown Point**: The asymptotic single-median Theil-Sen estimator has a theoretical breakdown point of $\approx 29.3\%$ under continuous independent sample assumptions.
-- **Observed Execution Time**: For $N = 500$ daily measurements ($124,750$ pairwise slopes), local execution completes deterministically in $< 10$ ms.
+## 6. Synthetic Noise Stress Testing Results
+Empirical synthetic validation tests confirmed:
+- Linear weight loss ($-0.50$ kg/week) with Gaussian noise $\sigma = 0.1, 0.3, 0.5, 1.0$ kg is estimated accurately within tolerance ($\pm 0.05$ to $0.15$ kg/week).
+- Single extreme outliers ($+15.0$ kg) and double extreme outliers ($+20.0$ kg, $-15.0$ kg) do not distort the slope estimate.
+- Abrupt direction reversals are flagged as `UNSTABLE` with `isDirectionReversal = true`.

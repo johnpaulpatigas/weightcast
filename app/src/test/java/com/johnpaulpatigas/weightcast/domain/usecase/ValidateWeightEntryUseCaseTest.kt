@@ -49,6 +49,12 @@ class FakeWeightRepository : WeightRepository {
         entries.remove(id)
         updateFlow()
     }
+
+    fun clear() {
+        entries.clear()
+        idCounter = 1L
+        updateFlow()
+    }
 }
 
 class ValidateWeightEntryUseCaseTest {

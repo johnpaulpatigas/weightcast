@@ -32,13 +32,15 @@ class GetDashboardSummaryUseCaseTest {
 
     private lateinit var weightRepository: FakeWeightRepository
     private lateinit var goalRepository: FakeGoalRepository
+    private lateinit var getStatisticalTrendUseCase: GetStatisticalTrendUseCase
     private lateinit var useCase: GetDashboardSummaryUseCase
 
     @Before
     fun setUp() {
         weightRepository = FakeWeightRepository()
         goalRepository = FakeGoalRepository()
-        useCase = GetDashboardSummaryUseCase(weightRepository, goalRepository)
+        getStatisticalTrendUseCase = GetStatisticalTrendUseCase(weightRepository)
+        useCase = GetDashboardSummaryUseCase(weightRepository, goalRepository, getStatisticalTrendUseCase)
     }
 
     @Test

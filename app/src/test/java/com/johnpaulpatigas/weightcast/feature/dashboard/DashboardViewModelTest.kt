@@ -36,8 +36,9 @@ class DashboardViewModelTest {
         goalRepository = FakeGoalRepository()
         userPreferencesRepository = FakeUserPreferencesRepository()
 
-        val getSummaryUseCase = GetDashboardSummaryUseCase(weightRepository, goalRepository)
-        val getChartDataUseCase = GetHistoricalChartDataUseCase(weightRepository)
+        val getTrendUseCase = com.johnpaulpatigas.weightcast.domain.usecase.GetStatisticalTrendUseCase(weightRepository)
+        val getSummaryUseCase = GetDashboardSummaryUseCase(weightRepository, goalRepository, getTrendUseCase)
+        val getChartDataUseCase = GetHistoricalChartDataUseCase(weightRepository, getTrendUseCase)
 
         viewModel = DashboardViewModel(
             getDashboardSummaryUseCase = getSummaryUseCase,

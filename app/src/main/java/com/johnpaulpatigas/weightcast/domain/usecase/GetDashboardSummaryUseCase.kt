@@ -14,7 +14,8 @@ import javax.inject.Inject
 class GetDashboardSummaryUseCase @Inject constructor(
     private val weightRepository: WeightRepository,
     private val goalRepository: GoalRepository,
-    private val getStatisticalTrendUseCase: GetStatisticalTrendUseCase
+    private val getStatisticalTrendUseCase: GetStatisticalTrendUseCase,
+    private val generateWeightForecastUseCase: GenerateWeightForecastUseCase
 ) {
     operator fun invoke(): Flow<DashboardSummary> {
         return combine(
@@ -41,12 +42,19 @@ class GetDashboardSummaryUseCase @Inject constructor(
             val sufficiency = trendResult.sufficiency
             val stability = estimate?.trendStability ?: TrendStability.UNSTABLE
 
+            val (forecastResult, targetEstimate) = generateWeightForecastUseCase(
+                rawEntries = sortedAsc,
+                goal = goal,
+                evaluationTimestamp = latestTimestamp
+            )
+
             val (progressPct, targetDateMillis) = calculateGoalMetrics(
                 entries = sortedAsc,
                 currentKg = currentKg,
                 weeklyChangeKg = weeklyChangeKg,
                 sufficiency = sufficiency,
-                goal = goal
+                goal = goal,
+                targetEstimate = targetEstimate
             )
 
             DashboardSummary(
@@ -59,7 +67,9 @@ class GetDashboardSummaryUseCase @Inject constructor(
                 trendDiagnostics = trendResult.diagnostics,
                 targetGoal = goal,
                 targetProgressPercentage = progressPct,
-                estimatedTargetDateMillis = targetDateMillis,
+                estimatedTargetDateMillis = targetDateMillis ?: targetEstimate.estimatedAchievementTimestamp,
+                forecastResult = forecastResult,
+                targetAchievementEstimate = targetEstimate,
                 recentEntries = entries.take(5)
             )
         }
@@ -70,7 +80,8 @@ class GetDashboardSummaryUseCase @Inject constructor(
         currentKg: Double,
         weeklyChangeKg: Double?,
         sufficiency: DataSufficiency,
-        goal: WeightGoal?
+        goal: WeightGoal?,
+        targetEstimate: com.johnpaulpatigas.weightcast.domain.forecast.model.TargetAchievementEstimate?
     ): Pair<Float?, Long?> {
         if (goal == null || entries.isEmpty()) return Pair(null, null)
 
@@ -85,20 +96,7 @@ class GetDashboardSummaryUseCase @Inject constructor(
         val rawProgress = (totalAchieved / totalNeeded).toFloat()
         val clampedProgress = rawProgress.coerceIn(0.0f, 1.0f)
 
-        var targetDate: Long? = null
-        if (weeklyChangeKg != null && weeklyChangeKg != 0.0 && sufficiency != DataSufficiency.INSUFFICIENT_DATA) {
-            val dailyRate = weeklyChangeKg / 7.0
-            val remainingKg = targetKg - currentKg
-
-            val isMovingTowardsGoal = (remainingKg / dailyRate) > 0
-
-            if (isMovingTowardsGoal) {
-                val daysToTarget = (remainingKg / dailyRate).toLong()
-                if (daysToTarget in 1..3650) {
-                    targetDate = System.currentTimeMillis() + (daysToTarget * 24 * 60 * 60 * 1000L)
-                }
-            }
-        }
+        val targetDate: Long? = targetEstimate?.estimatedAchievementTimestamp
 
         return Pair(clampedProgress, targetDate)
     }

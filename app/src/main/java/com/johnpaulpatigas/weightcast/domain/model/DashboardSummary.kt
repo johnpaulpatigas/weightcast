@@ -1,5 +1,7 @@
 package com.johnpaulpatigas.weightcast.domain.model
 
+import com.johnpaulpatigas.weightcast.domain.forecast.model.ForecastResult
+import com.johnpaulpatigas.weightcast.domain.forecast.model.TargetAchievementEstimate
 import com.johnpaulpatigas.weightcast.domain.trend.model.DataSufficiency
 import com.johnpaulpatigas.weightcast.domain.trend.model.TrendDiagnostics
 import com.johnpaulpatigas.weightcast.domain.trend.model.TrendStability
@@ -19,5 +21,7 @@ data class DashboardSummary(
     val targetGoal: WeightGoal? = null,
     val targetProgressPercentage: Float? = null,
     val estimatedTargetDateMillis: Long? = null,
+    val forecastResult: ForecastResult? = null,
+    val targetAchievementEstimate: TargetAchievementEstimate? = null,
     val recentEntries: List<WeightEntry> = emptyList()
 )

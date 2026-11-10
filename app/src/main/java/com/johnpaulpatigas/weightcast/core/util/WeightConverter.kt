@@ -47,7 +47,11 @@ object WeightConverter {
         targetUnit: WeightUnit = WeightUnit.KG,
         decimalPlaces: Int = 1
     ): String {
-        val rounded = roundTo(canonicalKgValue, decimalPlaces)
-        return "$rounded kg"
+        return canonicalKgValue.formatKg(decimalPlaces)
     }
 }
+
+/**
+ * Top-level Kotlin extension for formatting Double weight in kilograms (kg).
+ */
+fun Double.formatKg(decimals: Int = 1): String = "%.${decimals}f kg".format(this)

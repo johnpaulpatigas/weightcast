@@ -6,14 +6,18 @@ package com.johnpaulpatigas.weightcast.domain.trend.model
  * @property validMeasurementCount Count of valid measurements used.
  * @property rejectedMeasurementCount Count of rejected measurements (e.g. invalid/out-of-range).
  * @property timeSpanDays Total time span covered by measurements in days.
+ * @property coverageRatio Ratio of daily measurements present over total calendar days in span.
  * @property validPairwiseSlopeCount Number of valid non-zero time-delta pairs computed.
+ * @property stabilityDiagnostics Subwindow and residual stability diagnostics, or null if unavailable.
  * @property statusMessage Human-readable status description of the estimation result.
  */
 data class TrendDiagnostics(
     val validMeasurementCount: Int,
     val rejectedMeasurementCount: Int,
     val timeSpanDays: Double,
+    val coverageRatio: Double,
     val validPairwiseSlopeCount: Int,
+    val stabilityDiagnostics: TrendStabilityDiagnostics?,
     val statusMessage: String
 )
 

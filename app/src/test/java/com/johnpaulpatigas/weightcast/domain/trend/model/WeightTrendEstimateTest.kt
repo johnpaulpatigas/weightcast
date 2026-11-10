@@ -3,7 +3,6 @@ package com.johnpaulpatigas.weightcast.domain.trend.model
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class WeightTrendEstimateTest {
@@ -29,7 +28,7 @@ class WeightTrendEstimateTest {
     fun `valid construction calculates derived weekly change correctly for negative slope`() {
         val estimate = WeightTrendEstimate(
             currentTrendKg = 70.0,
-            slopeKgPerDay = -0.1, // -0.1 kg/day = -0.7 kg/week
+            slopeKgPerDay = -0.1,
             interceptKg = 71.4,
             measurementCount = 14,
             timeSpanDays = 14.0,
@@ -45,7 +44,7 @@ class WeightTrendEstimateTest {
     fun `valid construction calculates derived weekly change correctly for positive slope`() {
         val estimate = WeightTrendEstimate(
             currentTrendKg = 82.5,
-            slopeKgPerDay = 0.05, // +0.05 kg/day = +0.35 kg/week
+            slopeKgPerDay = 0.05,
             interceptKg = 80.0,
             measurementCount = 7,
             timeSpanDays = 10.0,
@@ -91,7 +90,9 @@ class WeightTrendEstimateTest {
             validMeasurementCount = 1,
             rejectedMeasurementCount = 0,
             timeSpanDays = 0.0,
+            coverageRatio = 1.0,
             validPairwiseSlopeCount = 0,
+            stabilityDiagnostics = null,
             statusMessage = "Insufficient data points"
         )
 
@@ -108,7 +109,6 @@ class WeightTrendEstimateTest {
 
     @Test
     fun `DataSufficiency and TrendStability can vary independently`() {
-        // High data sufficiency with unstable trend (e.g. erratic weight fluctuation despite daily weigh-ins)
         val estimate = WeightTrendEstimate(
             currentTrendKg = 75.0,
             slopeKgPerDay = 0.01,

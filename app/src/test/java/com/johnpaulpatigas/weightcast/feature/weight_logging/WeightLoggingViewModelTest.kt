@@ -113,17 +113,6 @@ class WeightLoggingViewModelTest {
     }
 
     @Test
-    fun `onUnitSelected converts displayed weight input`() = runTest {
-        viewModel.onOpenAddForm()
-        viewModel.onWeightInputChanged("70.0")
-        viewModel.onUnitSelected(WeightUnit.LBS)
-
-        val state = viewModel.uiState.value
-        assertEquals(WeightUnit.LBS, state.selectedUnit)
-        assertEquals("154.3", state.weightInput)
-    }
-
-    @Test
     fun `onDeleteEntry removes entry from repository`() = runTest {
         viewModel.onOpenAddForm()
         viewModel.onWeightInputChanged("80.0")

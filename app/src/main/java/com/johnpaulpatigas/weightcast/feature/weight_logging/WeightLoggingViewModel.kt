@@ -40,11 +40,7 @@ class WeightLoggingViewModel @Inject constructor(
         viewModelScope.launch {
             userPreferencesRepository.preferredUnit.collect { unit ->
                 _uiState.update { currentState ->
-                    if (!currentState.isEditing && currentState.weightInput.isEmpty()) {
-                        currentState.copy(selectedUnit = unit)
-                    } else {
-                        currentState
-                    }
+                    currentState.copy(selectedUnit = unit)
                 }
             }
         }
@@ -111,17 +107,7 @@ class WeightLoggingViewModel @Inject constructor(
     }
 
     fun onUnitSelected(unit: WeightUnit) {
-        val currentInput = _uiState.value.weightInput.toDoubleOrNull()
-        val currentUnit = _uiState.value.selectedUnit
-
-        if (currentInput != null && currentInput > 0.0 && currentUnit != unit) {
-            val converted = WeightConverter.convert(currentInput, currentUnit, unit)
-            val roundedStr = WeightConverter.roundTo(converted, 1).toString()
-            _uiState.update { it.copy(selectedUnit = unit, weightInput = roundedStr) }
-        } else {
-            _uiState.update { it.copy(selectedUnit = unit) }
-        }
-
+        _uiState.update { it.copy(selectedUnit = unit) }
         viewModelScope.launch {
             userPreferencesRepository.setPreferredUnit(unit)
         }

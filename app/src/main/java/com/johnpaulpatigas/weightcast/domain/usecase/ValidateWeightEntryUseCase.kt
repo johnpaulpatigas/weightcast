@@ -19,7 +19,7 @@ class ValidateWeightEntryUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(
         weightValue: Double?,
-        unit: WeightUnit,
+        unit: WeightUnit = WeightUnit.KG,
         timestamp: Long,
         entryIdToIgnore: Long? = null,
         allowDuplicate: Boolean = false
@@ -30,7 +30,7 @@ class ValidateWeightEntryUseCase @Inject constructor(
 
         val weightInKg = WeightConverter.toCanonicalKg(weightValue, unit)
         if (weightInKg < WeightValidationConstants.MIN_PLAUSIBLE_WEIGHT_KG || weightInKg > WeightValidationConstants.MAX_PLAUSIBLE_WEIGHT_KG) {
-            return ValidationResult.InvalidWeight("Please enter a weight within valid limits (2 kg - 500 kg / 4.4 lbs - 1100 lbs).")
+            return ValidationResult.InvalidWeight("Please enter a weight within valid limits (2 kg - 500 kg).")
         }
 
         val maxAllowedTime = System.currentTimeMillis() + (5 * 60 * 1000L)

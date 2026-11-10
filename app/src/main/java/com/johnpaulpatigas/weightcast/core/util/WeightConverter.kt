@@ -5,47 +5,29 @@ import kotlin.math.pow
 import kotlin.math.roundToInt
 
 /**
- * Utility for converting and formatting weight measurements.
+ * Utility for formatting weight measurements in canonical Kilograms (KG).
  */
 object WeightConverter {
 
-    fun kgToLbs(kg: Double): Double {
-        return kg * WeightUnit.LBS_PER_KG
-    }
-
-    fun lbsToKg(lbs: Double): Double {
-        return lbs / WeightUnit.LBS_PER_KG
+    /**
+     * Converts a weight value from one unit to another (exclusively KG).
+     */
+    fun convert(value: Double, fromUnit: WeightUnit = WeightUnit.KG, toUnit: WeightUnit = WeightUnit.KG): Double {
+        return value
     }
 
     /**
-     * Converts a weight value from one unit to another.
+     * Converts a weight into canonical Kilograms (KG).
      */
-    fun convert(value: Double, fromUnit: WeightUnit, toUnit: WeightUnit): Double {
-        if (fromUnit == toUnit) return value
-        return when (fromUnit) {
-            WeightUnit.KG -> kgToLbs(value)
-            WeightUnit.LBS -> lbsToKg(value)
-        }
-    }
-
-    /**
-     * Converts a weight given in any unit into canonical Kilograms (KG).
-     */
-    fun toCanonicalKg(value: Double, unit: WeightUnit): Double {
-        return when (unit) {
-            WeightUnit.KG -> value
-            WeightUnit.LBS -> lbsToKg(value)
-        }
+    fun toCanonicalKg(value: Double, unit: WeightUnit = WeightUnit.KG): Double {
+        return value
     }
 
     /**
      * Converts canonical Kilograms into target unit.
      */
-    fun fromCanonicalKg(kgValue: Double, targetUnit: WeightUnit): Double {
-        return when (targetUnit) {
-            WeightUnit.KG -> kgValue
-            WeightUnit.LBS -> kgToLbs(kgValue)
-        }
+    fun fromCanonicalKg(kgValue: Double, targetUnit: WeightUnit = WeightUnit.KG): Double {
+        return kgValue
     }
 
     /**
@@ -62,11 +44,10 @@ object WeightConverter {
      */
     fun formatDisplay(
         canonicalKgValue: Double,
-        targetUnit: WeightUnit,
+        targetUnit: WeightUnit = WeightUnit.KG,
         decimalPlaces: Int = 1
     ): String {
-        val converted = fromCanonicalKg(canonicalKgValue, targetUnit)
-        val rounded = roundTo(converted, decimalPlaces)
-        return "$rounded ${targetUnit.symbol}"
+        val rounded = roundTo(canonicalKgValue, decimalPlaces)
+        return "$rounded kg"
     }
 }

@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -23,9 +22,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -84,28 +80,12 @@ fun WeightLoggingDialog(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Unit Selector Segmented Row
-                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                    WeightUnit.entries.forEachIndexed { index, unit ->
-                        SegmentedButton(
-                            selected = uiState.selectedUnit == unit,
-                            onClick = { onUnitSelected(unit) },
-                            shape = SegmentedButtonDefaults.itemShape(
-                                index = index,
-                                count = WeightUnit.entries.size
-                            )
-                        ) {
-                            Text(unit.displayName, fontWeight = FontWeight.SemiBold)
-                        }
-                    }
-                }
-
                 // Expressive Weight Input Field
                 OutlinedTextField(
                     value = uiState.weightInput,
                     onValueChange = onWeightInputChanged,
-                    label = { Text("Weight (${uiState.selectedUnit.symbol})") },
-                    placeholder = { Text(if (uiState.selectedUnit == WeightUnit.KG) "70.5" else "155.4") },
+                    label = { Text("Weight (kg)") },
+                    placeholder = { Text("e.g., 70.5") },
                     textStyle = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     isError = uiState.validationError != null,

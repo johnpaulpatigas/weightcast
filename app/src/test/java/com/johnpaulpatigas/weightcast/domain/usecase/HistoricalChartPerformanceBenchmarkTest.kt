@@ -3,7 +3,10 @@ package com.johnpaulpatigas.weightcast.domain.usecase
 import com.johnpaulpatigas.weightcast.core.model.WeightUnit
 import com.johnpaulpatigas.weightcast.domain.model.TimeRange
 import com.johnpaulpatigas.weightcast.domain.model.WeightEntry
+import com.johnpaulpatigas.weightcast.domain.trend.engine.IncrementalTheilSenEvaluator
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -12,6 +15,7 @@ import org.junit.Test
 import kotlin.random.Random
 import kotlin.system.measureNanoTime
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class HistoricalChartPerformanceBenchmarkTest {
 
     private val dayMs = 86_400_000L
@@ -25,13 +29,23 @@ class HistoricalChartPerformanceBenchmarkTest {
     fun setUp() {
         weightRepository = FakeWeightRepository()
         getStatisticalTrendUseCase = GetStatisticalTrendUseCase(weightRepository)
-        getHistoricalChartDataUseCase = GetHistoricalChartDataUseCase(weightRepository, getStatisticalTrendUseCase)
+        getHistoricalChartDataUseCase = GetHistoricalChartDataUseCase(
+            weightRepository = weightRepository,
+            getStatisticalTrendUseCase = getStatisticalTrendUseCase,
+            defaultDispatcher = UnconfinedTestDispatcher()
+        )
     }
 
     @Test
     fun `benchmark complete historical chart data generation for 30 100 250 and 500 measurements`() = runTest {
         val sizes = listOf(30, 100, 250, 500)
-        val benchmarkResults = mutableMapOf<Int, Double>()
+        val warmupIterations = 5
+        val measuredIterations = 10
+        val medianResults = mutableMapOf<Int, Double>()
+
+        println("=========================================================================")
+        println("HISTORICAL CHART PERFORMANCE BENCHMARK (Phase 3.6 Optimized Implementation)")
+        println("=========================================================================")
 
         for (n in sizes) {
             weightRepository.clear()
@@ -49,22 +63,54 @@ class HistoricalChartPerformanceBenchmarkTest {
                 )
             }
 
-            // Warmup
-            getHistoricalChartDataUseCase(TimeRange.ALL_TIME).first()
-
-            // Measured run
-            val elapsedNanos = measureNanoTime {
-                val points = getHistoricalChartDataUseCase(TimeRange.ALL_TIME).first()
-                assertEquals(n, points.size)
+            // Warmup iterations
+            repeat(warmupIterations) {
+                getHistoricalChartDataUseCase(TimeRange.ALL_TIME).first()
             }
 
-            val elapsedMillis = elapsedNanos / 1_000_000.0
-            benchmarkResults[n] = elapsedMillis
-            println("Benchmark: N=$n measurements -> Complete Chart Generation Time = %.3f ms".format(elapsedMillis))
+            // Repeated measurement iterations
+            val runTimesMs = DoubleArray(measuredIterations)
+            repeat(measuredIterations) { iter ->
+                val elapsedNanos = measureNanoTime {
+                    val points = getHistoricalChartDataUseCase(TimeRange.ALL_TIME).first()
+                    assertEquals(n, points.size)
+                }
+                runTimesMs[iter] = elapsedNanos / 1_000_000.0
+            }
+
+            runTimesMs.sort()
+            val medianMs = if (measuredIterations % 2 == 1) {
+                runTimesMs[measuredIterations / 2]
+            } else {
+                (runTimesMs[measuredIterations / 2 - 1] + runTimesMs[measuredIterations / 2]) / 2.0
+            }
+
+            medianResults[n] = medianMs
+            println("N = %3d measurements | Median Execution Time = %7.3f ms".format(n, medianMs))
         }
 
-        sizes.forEach { size ->
-            assertTrue("Chart calculation for $size measurements completed", benchmarkResults[size]!! >= 0.0)
+        println("=========================================================================")
+
+        // Benchmark standalone algorithm separately from repository flow overhead
+        val sampleEntries = (0 until 500).map { day ->
+            WeightEntry(id = (day + 1).toLong(), weightInKg = 85.0 - (0.05 * day), originalUnit = WeightUnit.KG, timestamp = baseTime + (day * dayMs))
         }
+        repeat(5) {
+            IncrementalTheilSenEvaluator.evaluateHistoricalChartPoints(sampleEntries, sampleEntries)
+        }
+        val standaloneNanos = measureNanoTime {
+            repeat(10) {
+                IncrementalTheilSenEvaluator.evaluateHistoricalChartPoints(sampleEntries, sampleEntries)
+            }
+        }
+        val standaloneMedianMs = (standaloneNanos / 10.0) / 1_000_000.0
+        println("Standalone N=500 algorithm execution time: %.3f ms".format(standaloneMedianMs))
+        println("=========================================================================")
+
+        // Assert performance target: 500 measurements completes well within 100 ms
+        assertTrue(
+            "500 measurements chart generation median time (${medianResults[500]} ms) should be < 100 ms",
+            medianResults[500]!! < 100.0
+        )
     }
 }

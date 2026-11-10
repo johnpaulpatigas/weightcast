@@ -34,6 +34,7 @@ object HistoricalForecastBacktester {
                     horizon = horizon,
                     totalEvaluatedOrigins = 0,
                     validForecastsCount = 0,
+                    matchedObservationsCount = 0,
                     meanAbsoluteErrorKg = 0.0,
                     rootMeanSquaredErrorKg = 0.0,
                     meanAbsolutePercentageError = null,
@@ -48,6 +49,7 @@ object HistoricalForecastBacktester {
             )
         }
 
+        val validForecasts = horizons.associateWith { mutableListOf<Boolean>() }
         val absErrors = horizons.associateWith { mutableListOf<Double>() }
         val sqErrors = horizons.associateWith { mutableListOf<Double>() }
         val pctErrors = horizons.associateWith { mutableListOf<Double>() }
@@ -88,12 +90,15 @@ object HistoricalForecastBacktester {
             for (horizon in horizons) {
                 val forecast = forecastResult.forecasts[horizon]
                 if (forecast != null && forecast.isAvailable && forecast.predictedWeightKg != null) {
-                    val targetTs = forecast.targetTimestamp
-                    val actualObs = allMeasurements
-                        .filter { it.timestamp > originTs }
-                        .minByOrNull { abs(it.timestamp - targetTs) }
+                    validForecasts[horizon]?.add(true)
 
-                    if (actualObs != null && abs(actualObs.timestamp - targetTs) <= TWO_DAYS_MILLIS) {
+                    val targetTs = forecast.targetTimestamp
+                    // Match closest actual observation within +-2 days, breaking ties by earlier timestamp
+                    val actualObs = allMeasurements
+                        .filter { it.timestamp > originTs && abs(it.timestamp - targetTs) <= TWO_DAYS_MILLIS }
+                        .minWithOrNull(compareBy({ abs(it.timestamp - targetTs) }, { it.timestamp }))
+
+                    if (actualObs != null) {
                         val actualKg = actualObs.weightKg
                         val predictedKg = forecast.predictedWeightKg
                         val error = actualKg - predictedKg
@@ -116,16 +121,17 @@ object HistoricalForecastBacktester {
         }
 
         val horizonMap = horizons.associateWith { horizon ->
+            val nValid = validForecasts[horizon]?.size ?: 0
             val absErrList = absErrors[horizon] ?: emptyList()
             val sqErrList = sqErrors[horizon] ?: emptyList()
             val pctErrList = pctErrors[horizon] ?: emptyList()
             val covList = coverageList[horizon] ?: emptyList()
             val widthList = intervalWidths[horizon] ?: emptyList()
 
-            val nValid = absErrList.size
+            val matchedCount = absErrList.size
 
-            val mae = if (nValid > 0) absErrList.average() else 0.0
-            val rmse = if (nValid > 0) sqrt(sqErrList.average()) else 0.0
+            val mae = if (matchedCount > 0) absErrList.average() else 0.0
+            val rmse = if (matchedCount > 0) sqrt(sqErrList.average()) else 0.0
             val mape = if (pctErrList.isNotEmpty()) pctErrList.average() else null
             val coverage = if (covList.isNotEmpty()) covList.count { it }.toDouble() / covList.size.toDouble() else 0.0
             val meanWidth = if (widthList.isNotEmpty()) widthList.average() else 0.0
@@ -134,6 +140,7 @@ object HistoricalForecastBacktester {
                 horizon = horizon,
                 totalEvaluatedOrigins = originCount,
                 validForecastsCount = nValid,
+                matchedObservationsCount = matchedCount,
                 meanAbsoluteErrorKg = mae,
                 rootMeanSquaredErrorKg = rmse,
                 meanAbsolutePercentageError = mape,

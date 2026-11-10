@@ -6,6 +6,7 @@ data class HorizonBacktestResult(
     val horizon: ForecastHorizon,
     val totalEvaluatedOrigins: Int,
     val validForecastsCount: Int,
+    val matchedObservationsCount: Int,
     val meanAbsoluteErrorKg: Double,
     val rootMeanSquaredErrorKg: Double,
     val meanAbsolutePercentageError: Double?,

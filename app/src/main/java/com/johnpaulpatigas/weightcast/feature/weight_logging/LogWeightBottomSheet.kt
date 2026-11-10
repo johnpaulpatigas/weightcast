@@ -174,7 +174,14 @@ fun LogWeightBottomSheet(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                val currentKg = uiState.weightInput.toDoubleOrNull() ?: 70.0
+                val pastWeight = remember(uiState.entries, uiState.editingEntryId, uiState.isEditing) {
+                    if (uiState.isEditing) {
+                        uiState.entries.firstOrNull { it.id != uiState.editingEntryId }?.weightInKg ?: 70.0
+                    } else {
+                        uiState.entries.firstOrNull()?.weightInKg ?: 70.0
+                    }
+                }
+                val currentKg = uiState.weightInput.toDoubleOrNull() ?: pastWeight
 
                 listOf(-0.5, -0.1, 0.1, 0.5).forEach { delta ->
                     val isPositive = delta > 0

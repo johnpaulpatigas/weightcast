@@ -36,18 +36,34 @@ class WeightLoggingViewModel @Inject constructor(
     private fun observeWeightEntries() {
         viewModelScope.launch {
             getWeightEntriesUseCase().collect { entriesList ->
-                _uiState.update { it.copy(entries = entriesList, isLoading = false) }
+                _uiState.update { currentState ->
+                    val updatedState = currentState.copy(entries = entriesList, isLoading = false)
+                    if (currentState.isFormOpen && !currentState.isEditing && currentState.weightInput.isEmpty()) {
+                        val pastWeight = entriesList.firstOrNull()?.weightInKg
+                        if (pastWeight != null) {
+                            val formatted = WeightConverter.roundTo(pastWeight, 1).toString()
+                            updatedState.copy(weightInput = formatted)
+                        } else {
+                            updatedState
+                        }
+                    } else {
+                        updatedState
+                    }
+                }
             }
         }
     }
 
     fun onOpenAddForm() {
+        val lastWeight = _uiState.value.entries.firstOrNull()?.weightInKg
+        val initialWeightInput = lastWeight?.let { WeightConverter.roundTo(it, 1).toString() } ?: ""
+
         _uiState.update {
             it.copy(
                 isFormOpen = true,
                 isEditing = false,
                 editingEntryId = null,
-                weightInput = "",
+                weightInput = initialWeightInput,
                 timestamp = System.currentTimeMillis(),
                 notesInput = "",
                 validationError = null,

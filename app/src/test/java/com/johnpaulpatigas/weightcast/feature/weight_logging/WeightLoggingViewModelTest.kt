@@ -74,12 +74,26 @@ class WeightLoggingViewModelTest {
     }
 
     @Test
-    fun `onOpenAddForm opens form with reset state`() = runTest {
+    fun `onOpenAddForm opens form with reset state when no entries exist`() = runTest {
         viewModel.onOpenAddForm()
         val state = viewModel.uiState.value
         assertTrue(state.isFormOpen)
         assertFalse(state.isEditing)
         assertEquals("", state.weightInput)
+    }
+
+    @Test
+    fun `onOpenAddForm with existing past entry prefills weightInput with past entry weight`() = runTest {
+        viewModel.onOpenAddForm()
+        viewModel.onWeightInputChanged("74.5")
+        viewModel.onSaveEntry()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        viewModel.onOpenAddForm()
+        val state = viewModel.uiState.value
+        assertTrue(state.isFormOpen)
+        assertFalse(state.isEditing)
+        assertEquals("74.5", state.weightInput)
     }
 
     @Test

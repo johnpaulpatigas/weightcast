@@ -1,5 +1,6 @@
 package com.johnpaulpatigas.weightcast.domain.trend.engine
 
+import com.johnpaulpatigas.weightcast.core.util.WeightValidationConstants
 import com.johnpaulpatigas.weightcast.domain.model.WeightEntry
 
 object DataPreparation {
@@ -10,10 +11,10 @@ object DataPreparation {
      * Processes raw weight entries into clean, chronologically sorted, daily-aggregated prepared measurements.
      *
      * Rules:
-     * 1. Rejects invalid weights (<= 0.0, NaN, Infinite, < 2.0 kg or > 500.0 kg).
+     * 1. Rejects invalid weights (<= 0.0, NaN, Infinite, or outside product limits [2.0 kg, 500.0 kg]).
      * 2. Sorts entries chronologically by timestamp.
      * 3. Aggregates multiple entries occurring on the same UTC calendar day using arithmetic mean.
-     * 4. Normalizes elapsed days using: t = (timestamp - t0) / 86,400,000.0.
+     * 4. Normalizes elapsed days relative to dataset baseline t0: t = (timestamp - t0) / 86,400,000.0.
      * 5. Does NOT fabricate missing days.
      */
     fun prepare(rawEntries: List<WeightEntry>): PreparedDataset {
@@ -38,9 +39,9 @@ object DataPreparation {
             if (kg.isNaN() || kg.isInfinite() || kg <= 0.0) {
                 rejectedCount++
                 rejectionReasons.add("Entry ID ${entry.id}: non-positive or non-finite weight ($kg kg)")
-            } else if (kg < 2.0 || kg > 500.0) {
+            } else if (kg < WeightValidationConstants.MIN_PLAUSIBLE_WEIGHT_KG || kg > WeightValidationConstants.MAX_PLAUSIBLE_WEIGHT_KG) {
                 rejectedCount++
-                rejectionReasons.add("Entry ID ${entry.id}: out of plausible human range ($kg kg)")
+                rejectionReasons.add("Entry ID ${entry.id}: outside product validation limits ($kg kg)")
             } else {
                 validEntries.add(entry)
             }

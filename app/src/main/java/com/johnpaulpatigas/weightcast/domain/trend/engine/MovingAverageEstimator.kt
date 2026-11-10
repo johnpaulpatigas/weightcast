@@ -2,25 +2,26 @@ package com.johnpaulpatigas.weightcast.domain.trend.engine
 
 object MovingAverageEstimator {
 
-    private const val SEVEN_DAYS_MILLIS = 7 * 24 * 60 * 60 * 1000L
-
     /**
-     * Calculates trailing 7-calendar-day moving average at a specific evaluation timestamp.
+     * Calculates trailing 7-calendar-date moving average at a specific evaluation timestamp.
      *
-     * Rules:
-     * 1. Window bounds: [evaluationTimestamp - 7 days, evaluationTimestamp] (inclusive).
-     * 2. Uses ONLY measurements available on or before evaluationTimestamp (strictly no future data).
-     * 3. Uses daily representative measurements from [PreparedMeasurement].
-     * 4. Returns arithmetic mean of daily representatives present in window.
-     * 5. Returns null if zero measurements exist in window.
+     * Window Semantics:
+     * - Include evaluation date and 6 preceding UTC calendar dates: `[evalUtcDay - 6 days, evalUtcDay]`.
+     * - Exclude observations before the beginning of the 7-calendar-date window.
+     * - Exclude observations strictly after [evaluationTimestamp] (zero future-data leakage).
+     * - Uses arithmetic mean of available daily representatives within window.
+     * - Returns null if window contains zero daily representatives.
      */
     fun calculateMovingAverageAt(
         preparedMeasurements: List<PreparedMeasurement>,
         evaluationTimestamp: Long
     ): Double? {
-        val windowStart = evaluationTimestamp - SEVEN_DAYS_MILLIS
-        val windowMeasurements = preparedMeasurements.filter {
-            it.timestamp in windowStart..evaluationTimestamp
+        val evalUtcDay = evaluationTimestamp / 86_400_000L
+        val windowStartUtcDay = evalUtcDay - 6L
+
+        val windowMeasurements = preparedMeasurements.filter { measurement ->
+            val measurementUtcDay = measurement.timestamp / 86_400_000L
+            measurementUtcDay in windowStartUtcDay..evalUtcDay && measurement.timestamp <= evaluationTimestamp
         }
 
         if (windowMeasurements.isEmpty()) return null
@@ -29,7 +30,7 @@ object MovingAverageEstimator {
     }
 
     /**
-     * Calculates trailing 7-day moving average for all prepared measurements in dataset.
+     * Calculates trailing 7-calendar-date moving average for all prepared measurements in dataset.
      * Returns list of pairs (timestamp, movingAverageWeightKg).
      */
     fun calculateMovingAverageSeries(

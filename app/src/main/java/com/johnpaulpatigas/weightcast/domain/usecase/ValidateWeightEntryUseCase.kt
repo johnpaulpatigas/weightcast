@@ -2,6 +2,7 @@ package com.johnpaulpatigas.weightcast.domain.usecase
 
 import com.johnpaulpatigas.weightcast.core.model.WeightUnit
 import com.johnpaulpatigas.weightcast.core.util.WeightConverter
+import com.johnpaulpatigas.weightcast.core.util.WeightValidationConstants
 import com.johnpaulpatigas.weightcast.domain.model.WeightEntry
 import com.johnpaulpatigas.weightcast.domain.repository.WeightRepository
 import javax.inject.Inject
@@ -28,8 +29,8 @@ class ValidateWeightEntryUseCase @Inject constructor(
         }
 
         val weightInKg = WeightConverter.toCanonicalKg(weightValue, unit)
-        if (weightInKg < 2.0 || weightInKg > 500.0) {
-            return ValidationResult.InvalidWeight("Please enter a plausible weight value (2 kg - 500 kg / 4.4 lbs - 1100 lbs).")
+        if (weightInKg < WeightValidationConstants.MIN_PLAUSIBLE_WEIGHT_KG || weightInKg > WeightValidationConstants.MAX_PLAUSIBLE_WEIGHT_KG) {
+            return ValidationResult.InvalidWeight("Please enter a weight within valid limits (2 kg - 500 kg / 4.4 lbs - 1100 lbs).")
         }
 
         val maxAllowedTime = System.currentTimeMillis() + (5 * 60 * 1000L)

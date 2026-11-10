@@ -2,7 +2,6 @@ package com.johnpaulpatigas.weightcast.domain.trend.engine
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class MovingAverageEstimatorTest {
@@ -16,28 +15,43 @@ class MovingAverageEstimatorTest {
             PreparedMeasurement(timestamp = baseTime, elapsedDays = 0.0, weightKg = 70.0)
         )
 
-        // Evaluation time 20 days later -> window is [113d, 120d], baseTime is 100d -> 0 measurements
         val result = MovingAverageEstimator.calculateMovingAverageAt(measurements, baseTime + (20 * dayMs))
         assertNull(result)
     }
 
     @Test
-    fun `calculateMovingAverageAt uses only trailing 7 days and excludes future measurements`() {
+    fun `calculateMovingAverageAt uses exactly 7 UTC calendar dates and excludes future measurements`() {
+        // Evaluation on day 100 + 10d = day 110.
+        // 7 UTC calendar dates: day 104, 105, 106, 107, 108, 109, 110.
+        val evalTime = baseTime + (10 * dayMs) // Day 110
+
         val measurements = listOf(
-            PreparedMeasurement(timestamp = baseTime, elapsedDays = 0.0, weightKg = 80.0), // -10d from eval
-            PreparedMeasurement(timestamp = baseTime + (5 * dayMs), elapsedDays = 5.0, weightKg = 78.0), // -5d
-            PreparedMeasurement(timestamp = baseTime + (8 * dayMs), elapsedDays = 8.0, weightKg = 76.0), // -2d
-            PreparedMeasurement(timestamp = baseTime + (10 * dayMs), elapsedDays = 10.0, weightKg = 74.0), // Evaluation time
-            PreparedMeasurement(timestamp = baseTime + (12 * dayMs), elapsedDays = 12.0, weightKg = 70.0)  // Future -> MUST BE EXCLUDED
+            PreparedMeasurement(timestamp = baseTime + (3 * dayMs), elapsedDays = 3.0, weightKg = 90.0),  // Day 103 -> EXCLUDED (8th day back)
+            PreparedMeasurement(timestamp = baseTime + (4 * dayMs), elapsedDays = 4.0, weightKg = 80.0),  // Day 104 -> INCLUDED (7th day back boundary)
+            PreparedMeasurement(timestamp = baseTime + (7 * dayMs), elapsedDays = 7.0, weightKg = 76.0),  // Day 107 -> INCLUDED
+            PreparedMeasurement(timestamp = evalTime, elapsedDays = 10.0, weightKg = 72.0),               // Day 110 -> INCLUDED (eval timestamp)
+            PreparedMeasurement(timestamp = evalTime + 1000L, elapsedDays = 10.0, weightKg = 60.0)        // Future -> EXCLUDED
         )
 
-        val evalTime = baseTime + (10 * dayMs)
-        val windowStart = evalTime - (7 * dayMs) // baseTime + 3d
-
-        // Window [baseTime+3d, baseTime+10d] contains points at 5d (78.0), 8d (76.0), 10d (74.0)
-        // Average = (78.0 + 76.0 + 74.0) / 3 = 76.0
         val ma = MovingAverageEstimator.calculateMovingAverageAt(measurements, evalTime)
+        // Average of included points (80.0 + 76.0 + 72.0) / 3 = 76.0
         assertEquals(76.0, ma!!, 0.001)
+    }
+
+    @Test
+    fun `calculateMovingAverageAt boundary tests`() {
+        val evalDay = 20L
+        val evalTime = evalDay * dayMs // UTC midnight of Day 20
+
+        val pointDay13 = PreparedMeasurement(timestamp = 13 * dayMs, elapsedDays = 13.0, weightKg = 100.0) // Day 13 -> Excluded (8 dates back)
+        val pointDay14 = PreparedMeasurement(timestamp = 14 * dayMs, elapsedDays = 14.0, weightKg = 80.0)  // Day 14 -> Included (Boundary: evalDay - 6)
+        val pointDay20 = PreparedMeasurement(timestamp = evalTime, elapsedDays = 20.0, weightKg = 70.0)     // Day 20 -> Included
+
+        val measurements = listOf(pointDay13, pointDay14, pointDay20)
+
+        val ma = MovingAverageEstimator.calculateMovingAverageAt(measurements, evalTime)
+        // Day 14 and Day 20 included: avg(80.0, 70.0) = 75.0
+        assertEquals(75.0, ma!!, 0.001)
     }
 
     @Test
@@ -51,11 +65,8 @@ class MovingAverageEstimatorTest {
         val series = MovingAverageEstimator.calculateMovingAverageSeries(measurements)
         assertEquals(3, series.size)
 
-        // Point 1: avg(80.0) = 80.0
         assertEquals(80.0, series[0].second, 0.001)
-        // Point 2: avg(80.0, 78.0) = 79.0
         assertEquals(79.0, series[1].second, 0.001)
-        // Point 3: avg(80.0, 78.0, 76.0) = 78.0
         assertEquals(78.0, series[2].second, 0.001)
     }
 }

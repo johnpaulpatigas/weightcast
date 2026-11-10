@@ -21,12 +21,19 @@ object DataSufficiencyEvaluator {
     }
 
     /**
-     * Evaluates the statistical data sufficiency of prepared measurements.
+     * Evaluates the statistical data sufficiency of prepared measurements on or before [evaluationTimestamp].
+     *
+     * Coverage Ratio is a temporal measurement-density heuristic (ratio of daily measurements present over total calendar days in span).
+     * It is not a calibrated probability of forecast accuracy.
      */
-    fun evaluate(preparedMeasurements: List<PreparedMeasurement>): DataSufficiency {
-        if (preparedMeasurements.isEmpty()) return DataSufficiency.INSUFFICIENT_DATA
+    fun evaluate(
+        preparedMeasurements: List<PreparedMeasurement>,
+        evaluationTimestamp: Long = Long.MAX_VALUE
+    ): DataSufficiency {
+        val validInWindow = preparedMeasurements.filter { it.timestamp <= evaluationTimestamp }
+        if (validInWindow.isEmpty()) return DataSufficiency.INSUFFICIENT_DATA
 
-        val sorted = preparedMeasurements.sortedBy { it.timestamp }
+        val sorted = validInWindow.sortedBy { it.timestamp }
         val count = sorted.size
 
         if (count < Thresholds.MIN_MEASUREMENTS_FOR_LOW) {

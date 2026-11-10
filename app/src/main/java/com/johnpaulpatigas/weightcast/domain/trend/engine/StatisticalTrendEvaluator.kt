@@ -4,7 +4,6 @@ import com.johnpaulpatigas.weightcast.domain.model.WeightEntry
 import com.johnpaulpatigas.weightcast.domain.trend.model.DataSufficiency
 import com.johnpaulpatigas.weightcast.domain.trend.model.TrendDiagnostics
 import com.johnpaulpatigas.weightcast.domain.trend.model.TrendEstimationResult
-import kotlin.math.max
 
 object StatisticalTrendEvaluator {
 
@@ -21,11 +20,14 @@ object StatisticalTrendEvaluator {
     ): TrendEstimationResult {
         // 1. Data Preparation & Daily Aggregation
         val preparedDataset = DataPreparation.prepare(rawEntries)
-        val measurements = preparedDataset.measurements
+        val allMeasurements = preparedDataset.measurements
         val prepDiagnostics = preparedDataset.diagnostics
 
+        // Filter measurements on or before evaluation timestamp to prevent future-data leakage
+        val measurements = allMeasurements.filter { it.timestamp <= evaluationTimestamp }
+
         // 2. Data Sufficiency Evaluation
-        val sufficiency = DataSufficiencyEvaluator.evaluate(measurements)
+        val sufficiency = DataSufficiencyEvaluator.evaluate(measurements, evaluationTimestamp)
 
         if (sufficiency == DataSufficiency.INSUFFICIENT_DATA || measurements.size < 2) {
             val timeSpanDays = if (measurements.isNotEmpty()) {

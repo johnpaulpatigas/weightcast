@@ -9,7 +9,8 @@ import kotlin.math.abs
 object TrendStabilityEvaluator {
 
     object Thresholds {
-        const val MIN_WEEKLY_CHANGE_FOR_REVERSAL = 0.15
+        /** Minimum meaningful subwindow weekly change (0.25 kg/week) required to flag a direction reversal. */
+        const val MIN_WEEKLY_CHANGE_FOR_REVERSAL = 0.25
         const val SLOPE_DIFF_UNSTABLE_KG_PER_WEEK = 0.75
         const val SLOPE_DIFF_MODERATE_KG_PER_WEEK = 0.30
 

@@ -50,6 +50,14 @@ fun MainAppScreen(
     val configuration = LocalConfiguration.current
     val isExpandedWidth = configuration.screenWidthDp >= 600
 
+    fun navigateToAnalytics() {
+        navController.navigate(Screen.Analytics.route) {
+            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+            launchSingleTop = true
+            restoreState = true
+        }
+    }
+
     if (isExpandedWidth) {
         // Adaptive Navigation Rail for larger screens / tablets
         Scaffold { innerPadding ->
@@ -86,7 +94,8 @@ fun MainAppScreen(
                     composable(Screen.Dashboard.route) {
                         DashboardScreen(
                             viewModel = dashboardViewModel,
-                            onQuickAddClick = { loggingViewModel.onOpenAddForm() }
+                            onQuickAddClick = { loggingViewModel.onOpenAddForm() },
+                            onNavigateToAnalytics = { navigateToAnalytics() }
                         )
                     }
                     composable(Screen.Analytics.route) {
@@ -135,7 +144,8 @@ fun MainAppScreen(
                 composable(Screen.Dashboard.route) {
                     DashboardScreen(
                         viewModel = dashboardViewModel,
-                        onQuickAddClick = { loggingViewModel.onOpenAddForm() }
+                        onQuickAddClick = { loggingViewModel.onOpenAddForm() },
+                        onNavigateToAnalytics = { navigateToAnalytics() }
                     )
                 }
                 composable(Screen.Analytics.route) {

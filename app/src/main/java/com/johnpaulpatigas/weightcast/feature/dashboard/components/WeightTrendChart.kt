@@ -42,9 +42,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.johnpaulpatigas.weightcast.core.model.WeightUnit
 import com.johnpaulpatigas.weightcast.core.util.DateTimeUtils
 import com.johnpaulpatigas.weightcast.core.util.WeightConverter
+import com.johnpaulpatigas.weightcast.core.util.formatKg
 import com.johnpaulpatigas.weightcast.domain.model.ChartPoint
 import kotlin.math.abs
 import kotlin.math.max
@@ -52,7 +52,6 @@ import kotlin.math.max
 @Composable
 fun WeightTrendChart(
     chartPoints: List<ChartPoint>,
-    displayUnit: WeightUnit,
     modifier: Modifier = Modifier
 ) {
     var selectedPoint by remember(chartPoints) { mutableStateOf<ChartPoint?>(null) }
@@ -126,7 +125,7 @@ fun WeightTrendChart(
                             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                                 point.actualWeightInKg?.let { actual ->
                                     Text(
-                                        text = "Actual: ${WeightConverter.formatDisplay(actual, displayUnit)}",
+                                        text = "Actual: ${actual.formatKg()}",
                                         style = MaterialTheme.typography.bodySmall,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.primary
@@ -134,7 +133,7 @@ fun WeightTrendChart(
                                 }
                                 point.smoothedTrendInKg?.let { trend ->
                                     Text(
-                                        text = "Trend: ${WeightConverter.formatDisplay(trend, displayUnit)}",
+                                        text = "Trend: ${trend.formatKg()}",
                                         style = MaterialTheme.typography.bodySmall,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.tertiary
@@ -164,7 +163,6 @@ fun WeightTrendChart(
             } else {
                 InteractiveChartCanvas(
                     chartPoints = chartPoints,
-                    displayUnit = displayUnit,
                     selectedPoint = selectedPoint,
                     onPointSelected = { selectedPoint = it },
                     modifier = Modifier
@@ -193,7 +191,6 @@ private fun LegendItem(color: Color, label: String) {
 @Composable
 private fun InteractiveChartCanvas(
     chartPoints: List<ChartPoint>,
-    displayUnit: WeightUnit,
     selectedPoint: ChartPoint?,
     onPointSelected: (ChartPoint?) -> Unit,
     modifier: Modifier = Modifier
@@ -208,14 +205,8 @@ private fun InteractiveChartCanvas(
         fontSize = 10.sp
     )
 
-    val pointsInUnit = chartPoints.map { point ->
-        val actualConverted = point.actualWeightInKg?.let { WeightConverter.fromCanonicalKg(it, displayUnit) }
-        val trendConverted = point.smoothedTrendInKg?.let { WeightConverter.fromCanonicalKg(it, displayUnit) }
-        Triple(point, actualConverted, trendConverted)
-    }
-
-    val validActuals = pointsInUnit.mapNotNull { it.second }
-    val validTrends = pointsInUnit.mapNotNull { it.third }
+    val validActuals = chartPoints.mapNotNull { it.actualWeightInKg }
+    val validTrends = chartPoints.mapNotNull { it.smoothedTrendInKg }
     val allValues = validActuals + validTrends
 
     val rawMin = allValues.minOrNull() ?: 0.0
@@ -279,25 +270,25 @@ private fun InteractiveChartCanvas(
                 pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f))
             )
 
-            val textLayoutResult = textMeasurer.measure("$gridVal ${displayUnit.symbol}", style = labelStyle)
+            val textLayoutResult = textMeasurer.measure("$gridVal kg", style = labelStyle)
             drawText(
                 textLayoutResult = textLayoutResult,
                 topLeft = Offset(4f, yPos - (textLayoutResult.size.height / 2f))
             )
         }
 
-        if (pointsInUnit.size == 1) {
-            val item = pointsInUnit.first()
+        if (chartPoints.size == 1) {
+            val item = chartPoints.first()
             val x = paddingLeft + (chartWidth / 2f)
-            val valKg = item.second ?: yMin
+            val valKg = item.actualWeightInKg ?: yMin
             val y = chartHeight - (((valKg - yMin) / yRange).toFloat() * chartHeight)
 
             drawCircle(color = primaryColor, radius = 6.dp.toPx(), center = Offset(x, y))
             return@Canvas
         }
 
-        val minTime = pointsInUnit.first().first.timestamp
-        val maxTime = pointsInUnit.last().first.timestamp
+        val minTime = chartPoints.first().timestamp
+        val maxTime = chartPoints.last().timestamp
         val timeRangeMs = max(1L, maxTime - minTime)
 
         fun getX(timestamp: Long): Float {
@@ -316,7 +307,8 @@ private fun InteractiveChartCanvas(
         var prevY = 0f
         var firstActual = true
 
-        pointsInUnit.forEach { (point, actual, _) ->
+        chartPoints.forEach { point ->
+            val actual = point.actualWeightInKg
             if (actual != null) {
                 val x = getX(point.timestamp)
                 val y = getY(actual)
@@ -368,7 +360,8 @@ private fun InteractiveChartCanvas(
         val trendPath = Path()
         var firstTrend = true
 
-        pointsInUnit.forEach { (point, _, trend) ->
+        chartPoints.forEach { point ->
+            val trend = point.smoothedTrendInKg
             if (trend != null) {
                 val x = getX(point.timestamp)
                 val y = getY(trend)
@@ -390,7 +383,8 @@ private fun InteractiveChartCanvas(
         }
 
         // Draw Data Nodes & Selection Highlight
-        pointsInUnit.forEach { (point, actual, _) ->
+        chartPoints.forEach { point ->
+            val actual = point.actualWeightInKg
             if (actual != null) {
                 val x = getX(point.timestamp)
                 val y = getY(actual)

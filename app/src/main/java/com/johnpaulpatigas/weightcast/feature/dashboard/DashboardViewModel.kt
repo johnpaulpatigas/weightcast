@@ -2,8 +2,6 @@ package com.johnpaulpatigas.weightcast.feature.dashboard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.johnpaulpatigas.weightcast.core.model.WeightUnit
-import com.johnpaulpatigas.weightcast.core.preferences.UserPreferencesRepository
 import com.johnpaulpatigas.weightcast.domain.model.TimeRange
 import com.johnpaulpatigas.weightcast.domain.usecase.GetDashboardSummaryUseCase
 import com.johnpaulpatigas.weightcast.domain.usecase.GetHistoricalChartDataUseCase
@@ -21,8 +19,7 @@ import javax.inject.Inject
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
     private val getDashboardSummaryUseCase: GetDashboardSummaryUseCase,
-    private val getHistoricalChartDataUseCase: GetHistoricalChartDataUseCase,
-    private val userPreferencesRepository: UserPreferencesRepository
+    private val getHistoricalChartDataUseCase: GetHistoricalChartDataUseCase
 ) : ViewModel() {
 
     private val _selectedTimeRange = MutableStateFlow(TimeRange.DAYS_30)
@@ -31,17 +28,8 @@ class DashboardViewModel @Inject constructor(
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
     init {
-        observeUserPreferences()
         observeDashboardSummary()
         observeChartData()
-    }
-
-    private fun observeUserPreferences() {
-        viewModelScope.launch {
-            userPreferencesRepository.preferredUnit.collect { unit ->
-                _uiState.update { it.copy(displayUnit = unit) }
-            }
-        }
     }
 
     private fun observeDashboardSummary() {
@@ -65,11 +53,5 @@ class DashboardViewModel @Inject constructor(
     fun onTimeRangeSelected(timeRange: TimeRange) {
         _selectedTimeRange.value = timeRange
         _uiState.update { it.copy(selectedTimeRange = timeRange) }
-    }
-
-    fun onUnitSelected(unit: WeightUnit) {
-        viewModelScope.launch {
-            userPreferencesRepository.setPreferredUnit(unit)
-        }
     }
 }

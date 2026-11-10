@@ -1,5 +1,6 @@
 package com.johnpaulpatigas.weightcast.feature.weight_history
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -13,7 +14,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material3.AlertDialog
@@ -46,7 +46,7 @@ import com.johnpaulpatigas.weightcast.domain.model.WeightEntry
 import com.johnpaulpatigas.weightcast.feature.dashboard.components.WeightTrendChart
 import com.johnpaulpatigas.weightcast.feature.weight_logging.WeightEntryItem
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun WeightHistoryScreen(
     viewModel: WeightHistoryViewModel,
@@ -57,6 +57,10 @@ fun WeightHistoryScreen(
     var entryToDelete by remember { mutableStateOf<WeightEntry?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+
+    val groupedEntries = remember(uiState.filteredEntries) {
+        uiState.filteredEntries.groupBy { DateTimeUtils.formatMonthYear(it.timestamp) }
+    }
 
     Scaffold(
         topBar = {
@@ -83,21 +87,11 @@ fun WeightHistoryScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Time Range Filter Row
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                items(TimeRange.entries.toTypedArray()) { range ->
-                    FilterChip(
-                        selected = uiState.selectedTimeRange == range,
-                        onClick = { viewModel.onTimeRangeSelected(range) },
-                        label = { Text(range.label, fontWeight = if (uiState.selectedTimeRange == range) FontWeight.Bold else FontWeight.Normal) },
-                        shape = MaterialTheme.shapes.medium
-                    )
-                }
-            }
+            // M3 Analytics Filter Bar
+            AnalyticsFilterBar(
+                selectedTimeRange = uiState.selectedTimeRange,
+                onRangeSelected = { viewModel.onTimeRangeSelected(it) }
+            )
 
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
@@ -107,12 +101,11 @@ fun WeightHistoryScreen(
                 // Interactive Chart
                 item {
                     WeightTrendChart(
-                        chartPoints = uiState.chartPoints,
-                        displayUnit = uiState.displayUnit
+                        chartPoints = uiState.chartPoints
                     )
                 }
 
-                // Filtered Log Entries Section Header
+                // Header
                 item {
                     Row(
                         modifier = Modifier
@@ -157,19 +150,37 @@ fun WeightHistoryScreen(
                         }
                     }
                 } else {
-                    itemsIndexed(
-                        items = uiState.filteredEntries,
-                        key = { _, entry -> entry.id }
-                    ) { index, entry ->
-                        val prevWeight = uiState.filteredEntries.getOrNull(index + 1)?.weightInKg
+                    groupedEntries.forEach { (monthYearHeader, monthEntries) ->
+                        stickyHeader(key = monthYearHeader) {
+                            Surface(
+                                color = MaterialTheme.colorScheme.background,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp)
+                            ) {
+                                Text(
+                                    text = monthYearHeader,
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
 
-                        WeightEntryItem(
-                            entry = entry,
-                            previousEntryWeightInKg = prevWeight,
-                            displayUnit = uiState.displayUnit,
-                            onEditClick = { onEditEntryClick(entry) },
-                            onDeleteClick = { entryToDelete = entry }
-                        )
+                        items(
+                            items = monthEntries,
+                            key = { it.id }
+                        ) { entry ->
+                            val globalIndex = uiState.filteredEntries.indexOf(entry)
+                            val prevWeight = uiState.filteredEntries.getOrNull(globalIndex + 1)?.weightInKg
+
+                            WeightEntryItem(
+                                entry = entry,
+                                previousEntryWeightInKg = prevWeight,
+                                onEditClick = { onEditEntryClick(entry) },
+                                onDeleteClick = { entryToDelete = entry }
+                            )
+                        }
                     }
                 }
             }
@@ -202,5 +213,33 @@ fun WeightHistoryScreen(
                 }
             }
         )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AnalyticsFilterBar(
+    selectedTimeRange: TimeRange,
+    onRangeSelected: (TimeRange) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = modifier.fillMaxWidth()
+    ) {
+        items(TimeRange.entries.toTypedArray()) { range ->
+            FilterChip(
+                selected = selectedTimeRange == range,
+                onClick = { onRangeSelected(range) },
+                label = {
+                    Text(
+                        text = range.label,
+                        fontWeight = if (selectedTimeRange == range) FontWeight.Bold else FontWeight.Medium
+                    )
+                },
+                shape = MaterialTheme.shapes.medium
+            )
+        }
     }
 }

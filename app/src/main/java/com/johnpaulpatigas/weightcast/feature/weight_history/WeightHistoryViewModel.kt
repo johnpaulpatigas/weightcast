@@ -2,8 +2,6 @@ package com.johnpaulpatigas.weightcast.feature.weight_history
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.johnpaulpatigas.weightcast.core.model.WeightUnit
-import com.johnpaulpatigas.weightcast.core.preferences.UserPreferencesRepository
 import com.johnpaulpatigas.weightcast.core.util.TrendCalculator
 import com.johnpaulpatigas.weightcast.domain.model.TimeRange
 import com.johnpaulpatigas.weightcast.domain.usecase.DeleteWeightEntryUseCase
@@ -24,8 +22,7 @@ import javax.inject.Inject
 class WeightHistoryViewModel @Inject constructor(
     private val getWeightEntriesUseCase: GetWeightEntriesUseCase,
     private val getHistoricalChartDataUseCase: GetHistoricalChartDataUseCase,
-    private val deleteWeightEntryUseCase: DeleteWeightEntryUseCase,
-    private val userPreferencesRepository: UserPreferencesRepository
+    private val deleteWeightEntryUseCase: DeleteWeightEntryUseCase
 ) : ViewModel() {
 
     private val _selectedTimeRange = MutableStateFlow(TimeRange.DAYS_30)
@@ -34,17 +31,8 @@ class WeightHistoryViewModel @Inject constructor(
     val uiState: StateFlow<WeightHistoryUiState> = _uiState.asStateFlow()
 
     init {
-        observeUserPreferences()
         observeEntries()
         observeChartData()
-    }
-
-    private fun observeUserPreferences() {
-        viewModelScope.launch {
-            userPreferencesRepository.preferredUnit.collect { unit ->
-                _uiState.update { it.copy(displayUnit = unit) }
-            }
-        }
     }
 
     private fun observeEntries() {
@@ -84,12 +72,6 @@ class WeightHistoryViewModel @Inject constructor(
                 selectedTimeRange = range,
                 filteredEntries = filtered
             )
-        }
-    }
-
-    fun onUnitSelected(unit: WeightUnit) {
-        viewModelScope.launch {
-            userPreferencesRepository.setPreferredUnit(unit)
         }
     }
 

@@ -21,6 +21,7 @@ import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.MonitorWeight
+import androidx.compose.material.icons.filled.Timeline
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -51,9 +52,12 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.johnpaulpatigas.weightcast.core.util.DateTimeUtils
 import com.johnpaulpatigas.weightcast.core.util.WeightConverter
 import com.johnpaulpatigas.weightcast.core.util.formatKg
+import com.johnpaulpatigas.weightcast.domain.forecast.model.ForecastHorizon
+import com.johnpaulpatigas.weightcast.domain.forecast.model.WeightForecast
 import com.johnpaulpatigas.weightcast.domain.model.ChartPoint
 import com.johnpaulpatigas.weightcast.domain.model.DashboardSummary
 import com.johnpaulpatigas.weightcast.domain.model.WeightEntry
@@ -128,7 +132,14 @@ fun DashboardScreen(
                 )
             }
 
-            // 3. Recent Activity Header with "View All →"
+            // 3. Weight Trajectory & Forecast Section Card
+            item {
+                ForecastSectionCard(
+                    summary = uiState.summary
+                )
+            }
+
+            // 4. Recent Activity Header with "View All →"
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -492,6 +503,7 @@ fun GoalProgressCard(
 ) {
     val goal = summary.targetGoal
     val currentKg = summary.currentWeightInKg ?: return
+    val targetEstimate = summary.targetAchievementEstimate
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -558,12 +570,36 @@ fun GoalProgressCard(
 
                 Spacer(modifier = Modifier.height(6.dp))
 
-                Text(
-                    text = "${remainingKg.formatKg()} remaining to goal",
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.9f)
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "${remainingKg.formatKg()} remaining to goal",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.9f)
+                    )
+
+                    targetEstimate?.let { est ->
+                        if (est.isAchievable && est.estimatedAchievementTimestamp != null) {
+                            Text(
+                                text = "Est: ${DateTimeUtils.formatDate(est.estimatedAchievementTimestamp)}",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        } else {
+                            Text(
+                                text = est.availabilityReason,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontSize = 10.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
             } else {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
@@ -583,6 +619,158 @@ fun GoalProgressCard(
                     text = "Set a target weight goal in Goals & Settings to track your progress.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun ForecastSectionCard(
+    summary: DashboardSummary
+) {
+    val forecastResult = summary.forecastResult
+    val overallAvailability = forecastResult?.overallAvailability
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Timeline,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.secondary
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Weight Trajectory & Forecasts",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Surface(
+                    shape = MaterialTheme.shapes.extraSmall,
+                    color = MaterialTheme.colorScheme.secondaryContainer
+                ) {
+                    Text(
+                        text = "95% CI",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            if (forecastResult == null || !forecastResult.isAnyForecastAvailable) {
+                Surface(
+                    shape = MaterialTheme.shapes.medium,
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = overallAvailability?.reason ?: "Not enough statistical data to generate future weight projections.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(14.dp)
+                    )
+                }
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    val horizons = listOf(ForecastHorizon.DAYS_7, ForecastHorizon.DAYS_30, ForecastHorizon.DAYS_90)
+                    horizons.forEach { horizon ->
+                        val wf = forecastResult.forecasts[horizon]
+                        ForecastItemCard(
+                            horizon = horizon,
+                            forecast = wf,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ForecastItemCard(
+    horizon: ForecastHorizon,
+    forecast: WeightForecast?,
+    modifier: Modifier = Modifier
+) {
+    val isAvailable = forecast?.isAvailable == true
+
+    Surface(
+        modifier = modifier,
+        shape = MaterialTheme.shapes.medium,
+        color = if (isAvailable) MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surfaceContainerLow
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(12.dp)
+                .fillMaxWidth()
+        ) {
+            Text(
+                text = horizon.displayName,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSecondaryContainer
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            if (isAvailable && forecast?.predictedWeightKg != null) {
+                Text(
+                    text = forecast.predictedWeightKg.formatKg(),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = MaterialTheme.colorScheme.secondary
+                )
+
+                forecast.predictionInterval?.let { pi ->
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "${pi.lowerBoundKg.formatKg()} - ${pi.upperBoundKg.formatKg()}",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontSize = 10.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            } else {
+                Text(
+                    text = "Unavailable",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.outline
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = forecast?.availability?.reason ?: "N/A",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontSize = 9.sp,
+                    color = MaterialTheme.colorScheme.outline,
+                    maxLines = 2
                 )
             }
         }

@@ -56,12 +56,15 @@ fun WeightTrendChart(
 ) {
     var selectedPoint by remember(chartPoints) { mutableStateOf<ChartPoint?>(null) }
 
+    val hasTrends = chartPoints.any { it.smoothedTrendInKg != null }
+    val hasForecasts = chartPoints.any { it.forecastWeightInKg != null }
+
     Card(
         modifier = modifier
             .fillMaxWidth()
             .semantics {
                 contentDescription = if (chartPoints.isNotEmpty()) {
-                    "Weight trend chart with ${chartPoints.size} measurements"
+                    "Weight trend chart with ${chartPoints.size} measurements and forecasts"
                 } else {
                     "Empty weight trend chart"
                 }
@@ -81,7 +84,7 @@ fun WeightTrendChart(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Weight History & Trend",
+                    text = "History, Trend & Forecast",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -89,9 +92,13 @@ fun WeightTrendChart(
                 Spacer(modifier = Modifier.weight(1f))
 
                 LegendItem(color = MaterialTheme.colorScheme.primary, label = "Actual")
-                if (chartPoints.any { it.smoothedTrendInKg != null }) {
-                    Spacer(modifier = Modifier.width(12.dp))
+                if (hasTrends) {
+                    Spacer(modifier = Modifier.width(10.dp))
                     LegendItem(color = MaterialTheme.colorScheme.tertiary, label = "Trend")
+                }
+                if (hasForecasts) {
+                    Spacer(modifier = Modifier.width(10.dp))
+                    LegendItem(color = MaterialTheme.colorScheme.secondary, label = "Forecast")
                 }
             }
 
@@ -122,7 +129,7 @@ fun WeightTrendChart(
                                 color = MaterialTheme.colorScheme.onPrimaryContainer
                             )
 
-                            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                                 point.actualWeightInKg?.let { actual ->
                                     Text(
                                         text = "Actual: ${actual.formatKg()}",
@@ -137,6 +144,14 @@ fun WeightTrendChart(
                                         style = MaterialTheme.typography.bodySmall,
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.tertiary
+                                    )
+                                }
+                                point.forecastWeightInKg?.let { forecast ->
+                                    Text(
+                                        text = "Forecast: ${forecast.formatKg()}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.secondary
                                     )
                                 }
                             }
@@ -198,7 +213,10 @@ private fun InteractiveChartCanvas(
     val haptic = LocalHapticFeedback.current
     val primaryColor = MaterialTheme.colorScheme.primary
     val trendColor = MaterialTheme.colorScheme.tertiary
+    val forecastColor = MaterialTheme.colorScheme.secondary
     val gridColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+    val intervalBandColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.35f)
+
     val textMeasurer = rememberTextMeasurer()
     val labelStyle = MaterialTheme.typography.labelSmall.copy(
         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -207,7 +225,11 @@ private fun InteractiveChartCanvas(
 
     val validActuals = chartPoints.mapNotNull { it.actualWeightInKg }
     val validTrends = chartPoints.mapNotNull { it.smoothedTrendInKg }
-    val allValues = validActuals + validTrends
+    val validForecasts = chartPoints.mapNotNull { it.forecastWeightInKg }
+    val validLowers = chartPoints.mapNotNull { it.lowerBoundInKg }
+    val validUppers = chartPoints.mapNotNull { it.upperBoundInKg }
+
+    val allValues = validActuals + validTrends + validForecasts + validLowers + validUppers
 
     val rawMin = allValues.minOrNull() ?: 0.0
     val rawMax = allValues.maxOrNull() ?: 100.0
@@ -280,7 +302,7 @@ private fun InteractiveChartCanvas(
         if (chartPoints.size == 1) {
             val item = chartPoints.first()
             val x = paddingLeft + (chartWidth / 2f)
-            val valKg = item.actualWeightInKg ?: yMin
+            val valKg = item.actualWeightInKg ?: item.forecastWeightInKg ?: yMin
             val y = chartHeight - (((valKg - yMin) / yRange).toFloat() * chartHeight)
 
             drawCircle(color = primaryColor, radius = 6.dp.toPx(), center = Offset(x, y))
@@ -301,7 +323,74 @@ private fun InteractiveChartCanvas(
             return chartHeight - (progress * chartHeight)
         }
 
-        // Build Actual Weight Path
+        // 1. Draw Forecast Shaded Prediction Interval Region (Upper to Lower bounds)
+        val forecastPts = chartPoints.filter { it.forecastWeightInKg != null }
+        if (forecastPts.size >= 2) {
+            val intervalPath = Path()
+            var firstBound = true
+
+            // Forward along Upper Bound
+            forecastPts.forEach { pt ->
+                val upperKg = pt.upperBoundInKg ?: pt.forecastWeightInKg!!
+                val x = getX(pt.timestamp)
+                val y = getY(upperKg)
+                if (firstBound) {
+                    intervalPath.moveTo(x, y)
+                    firstBound = false
+                } else {
+                    intervalPath.lineTo(x, y)
+                }
+            }
+
+            // Backward along Lower Bound
+            forecastPts.reversed().forEach { pt ->
+                val lowerKg = pt.lowerBoundInKg ?: pt.forecastWeightInKg!!
+                val x = getX(pt.timestamp)
+                val y = getY(lowerKg)
+                intervalPath.lineTo(x, y)
+            }
+            intervalPath.close()
+
+            drawPath(path = intervalPath, color = intervalBandColor)
+        }
+
+        // 2. Draw Forecast Trajectory Path (Dotted)
+        if (forecastPts.size >= 2) {
+            val forecastPath = Path()
+            var firstForecast = true
+
+            forecastPts.forEach { pt ->
+                val fKg = pt.forecastWeightInKg!!
+                val x = getX(pt.timestamp)
+                val y = getY(fKg)
+                if (firstForecast) {
+                    forecastPath.moveTo(x, y)
+                    firstForecast = false
+                } else {
+                    forecastPath.lineTo(x, y)
+                }
+            }
+
+            drawPath(
+                path = forecastPath,
+                color = forecastColor,
+                style = Stroke(
+                    width = 2.5.dp.toPx(),
+                    pathEffect = PathEffect.dashPathEffect(floatArrayOf(6f, 6f))
+                )
+            )
+
+            // Draw forecast nodes
+            forecastPts.forEach { pt ->
+                if (pt.forecastWeightInKg != null && pt.actualWeightInKg == null) {
+                    val x = getX(pt.timestamp)
+                    val y = getY(pt.forecastWeightInKg)
+                    drawCircle(color = forecastColor, radius = 4.dp.toPx(), center = Offset(x, y))
+                }
+            }
+        }
+
+        // 3. Build Historical Actual Weight Path
         val actualPath = Path()
         var prevX = 0f
         var prevY = 0f
@@ -356,7 +445,7 @@ private fun InteractiveChartCanvas(
             style = Stroke(width = 3.5.dp.toPx())
         )
 
-        // Draw Smoothed Statistical Trend Line (Dashed)
+        // 4. Draw Smoothed Statistical Trend Line (Dashed)
         val trendPath = Path()
         var firstTrend = true
 
@@ -382,24 +471,25 @@ private fun InteractiveChartCanvas(
             )
         }
 
-        // Draw Data Nodes & Selection Highlight
+        // 5. Draw Data Nodes & Selection Highlight
         chartPoints.forEach { point ->
-            val actual = point.actualWeightInKg
-            if (actual != null) {
+            val nodeVal = point.actualWeightInKg ?: point.forecastWeightInKg
+            if (nodeVal != null) {
                 val x = getX(point.timestamp)
-                val y = getY(actual)
+                val y = getY(nodeVal)
+                val nodeColor = if (point.actualWeightInKg != null) primaryColor else forecastColor
 
                 val isSelected = selectedPoint?.timestamp == point.timestamp
                 if (isSelected) {
                     drawLine(
-                        color = primaryColor.copy(alpha = 0.5f),
+                        color = nodeColor.copy(alpha = 0.5f),
                         start = Offset(x, 0f),
                         end = Offset(x, chartHeight),
                         strokeWidth = 2.dp.toPx()
                     )
-                    drawCircle(color = primaryColor.copy(alpha = 0.3f), radius = 10.dp.toPx(), center = Offset(x, y))
-                    drawCircle(color = primaryColor, radius = 6.dp.toPx(), center = Offset(x, y))
-                } else {
+                    drawCircle(color = nodeColor.copy(alpha = 0.3f), radius = 10.dp.toPx(), center = Offset(x, y))
+                    drawCircle(color = nodeColor, radius = 6.dp.toPx(), center = Offset(x, y))
+                } else if (point.actualWeightInKg != null) {
                     drawCircle(color = primaryColor, radius = 4.dp.toPx(), center = Offset(x, y))
                 }
             }

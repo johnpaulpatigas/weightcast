@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -28,11 +27,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.drawText
@@ -196,6 +198,7 @@ private fun InteractiveChartCanvas(
     onPointSelected: (ChartPoint?) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val haptic = LocalHapticFeedback.current
     val primaryColor = MaterialTheme.colorScheme.primary
     val trendColor = MaterialTheme.colorScheme.tertiary
     val gridColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
@@ -246,6 +249,7 @@ private fun InteractiveChartCanvas(
                     if (selectedPoint == nearest) {
                         onPointSelected(null)
                     } else {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         onPointSelected(nearest)
                     }
                 }
@@ -306,7 +310,7 @@ private fun InteractiveChartCanvas(
             return chartHeight - (progress * chartHeight)
         }
 
-        // Draw Actual Weight Line (Smooth Bezier Curve)
+        // Build Actual Weight Path
         val actualPath = Path()
         var prevX = 0f
         var prevY = 0f
@@ -332,13 +336,35 @@ private fun InteractiveChartCanvas(
             }
         }
 
+        // Draw Fill Gradient under Actual Path
+        if (!firstActual) {
+            val fillPath = Path().apply {
+                addPath(actualPath)
+                lineTo(prevX, chartHeight)
+                lineTo(paddingLeft, chartHeight)
+                close()
+            }
+            drawPath(
+                path = fillPath,
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        primaryColor.copy(alpha = 0.35f),
+                        primaryColor.copy(alpha = 0.0f)
+                    ),
+                    startY = 0f,
+                    endY = chartHeight
+                )
+            )
+        }
+
+        // Draw Actual Weight Line (Smooth Bezier Curve)
         drawPath(
             path = actualPath,
             color = primaryColor,
             style = Stroke(width = 3.5.dp.toPx())
         )
 
-        // Draw Smoothed Trend Line (Dashed)
+        // Draw Smoothed Statistical Trend Line (Dashed)
         val trendPath = Path()
         var firstTrend = true
 
@@ -363,7 +389,7 @@ private fun InteractiveChartCanvas(
             )
         }
 
-        // Draw Actual Data Nodes
+        // Draw Data Nodes & Selection Highlight
         pointsInUnit.forEach { (point, actual, _) ->
             if (actual != null) {
                 val x = getX(point.timestamp)
@@ -371,7 +397,6 @@ private fun InteractiveChartCanvas(
 
                 val isSelected = selectedPoint?.timestamp == point.timestamp
                 if (isSelected) {
-                    // Highlight line & ring
                     drawLine(
                         color = primaryColor.copy(alpha = 0.5f),
                         start = Offset(x, 0f),
@@ -386,7 +411,7 @@ private fun InteractiveChartCanvas(
             }
         }
 
-        // Draw X-axis date labels
+        // Draw X-axis Date Labels
         val startDateStr = DateTimeUtils.formatDate(minTime)
         val endDateStr = DateTimeUtils.formatDate(maxTime)
 

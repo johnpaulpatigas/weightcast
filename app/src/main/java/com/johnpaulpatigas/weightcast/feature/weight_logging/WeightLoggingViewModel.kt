@@ -111,7 +111,7 @@ class WeightLoggingViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     timestamp = System.currentTimeMillis(),
-                    validationError = "Weight log date cannot be in the future."
+                    validationError = "Weight log date/time cannot be in the future."
                 )
             }
         } else {

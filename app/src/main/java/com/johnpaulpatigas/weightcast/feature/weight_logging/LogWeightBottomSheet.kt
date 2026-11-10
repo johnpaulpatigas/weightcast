@@ -381,9 +381,13 @@ fun LogWeightBottomSheet(
 
     // Time Picker Dialog
     if (showTimePicker) {
+        val nowLdt = remember { LocalDateTime.now() }
+        val effectiveLdt = remember(currentLdt) {
+            if (currentLdt.isAfter(nowLdt)) nowLdt else currentLdt
+        }
         val timePickerState = rememberTimePickerState(
-            initialHour = currentLdt.hour,
-            initialMinute = currentLdt.minute,
+            initialHour = effectiveLdt.hour,
+            initialMinute = effectiveLdt.minute,
             is24Hour = false
         )
         Dialog(onDismissRequest = { showTimePicker = false }) {
@@ -415,14 +419,16 @@ fun LogWeightBottomSheet(
                         Spacer(modifier = Modifier.width(8.dp))
                         Button(
                             onClick = {
-                                val newLdt = LocalDateTime.of(
+                                val currentNow = LocalDateTime.now()
+                                val rawLdt = LocalDateTime.of(
                                     currentLdt.toLocalDate(),
                                     java.time.LocalTime.of(
                                         timePickerState.hour,
                                         timePickerState.minute
                                     )
                                 )
-                                onTimestampSelected(DateTimeUtils.toEpochMillis(newLdt))
+                                val finalLdt = if (rawLdt.isAfter(currentNow)) currentNow else rawLdt
+                                onTimestampSelected(DateTimeUtils.toEpochMillis(finalLdt))
                                 showTimePicker = false
                             },
                             shape = MaterialTheme.shapes.medium

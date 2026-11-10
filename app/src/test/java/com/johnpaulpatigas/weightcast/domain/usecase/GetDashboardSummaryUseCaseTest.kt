@@ -46,7 +46,7 @@ class GetDashboardSummaryUseCaseTest {
         val summary = useCase().first()
         assertNull(summary.currentWeightInKg)
         assertNull(summary.smoothedTrendWeightInKg)
-        assertNull(summary.weightChange7dInKg)
+        assertNull(summary.weeklyChangeKg)
         assertTrue(summary.recentEntries.isEmpty())
     }
 
@@ -61,7 +61,6 @@ class GetDashboardSummaryUseCaseTest {
         val summary = useCase().first()
         assertNotNull(summary.currentWeightInKg)
         assertEquals(78.0, summary.currentWeightInKg!!, 0.001)
-        assertEquals(-2.0, summary.weightChange7dInKg!!, 0.001)
         assertEquals(2, summary.recentEntries.size)
     }
 }

@@ -1,8 +1,5 @@
 package com.johnpaulpatigas.weightcast.feature.dashboard
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -49,6 +46,8 @@ import com.johnpaulpatigas.weightcast.core.util.DateTimeUtils
 import com.johnpaulpatigas.weightcast.core.util.WeightConverter
 import com.johnpaulpatigas.weightcast.domain.model.DashboardSummary
 import com.johnpaulpatigas.weightcast.domain.model.TimeRange
+import com.johnpaulpatigas.weightcast.domain.trend.model.DataSufficiency
+import com.johnpaulpatigas.weightcast.domain.trend.model.TrendStability
 import com.johnpaulpatigas.weightcast.feature.dashboard.components.WeightTrendChart
 import com.johnpaulpatigas.weightcast.feature.weight_logging.WeightEntryItem
 import com.johnpaulpatigas.weightcast.ui.motion.AnimatedMetricContent
@@ -98,7 +97,7 @@ fun DashboardScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // 1. Expressive Hero Weight Metric Card
+            // 1. Primary Weight Metric & Trend Overview Card
             item {
                 CurrentWeightOverviewCard(
                     summary = uiState.summary,
@@ -213,7 +212,7 @@ private fun CurrentWeightOverviewCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Current Weight",
+                    text = "Recorded Weight",
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -230,7 +229,7 @@ private fun CurrentWeightOverviewCard(
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            // Animated Weight Display
+            // Primary: Authoritative Recorded Weight
             val currentStr = summary.currentWeightInKg?.let {
                 WeightConverter.formatDisplay(it, displayUnit, 1)
             } ?: "No data"
@@ -246,55 +245,112 @@ private fun CurrentWeightOverviewCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                val trendStr = summary.smoothedTrendWeightInKg?.let {
-                    "Trend: ${WeightConverter.formatDisplay(it, displayUnit, 1)}"
-                } ?: "Trend: N/A"
+            // Secondary: Statistical Trend & Status Badges
+            val isSufficient = summary.dataSufficiency != DataSufficiency.INSUFFICIENT_DATA
 
+            if (isSufficient && summary.smoothedTrendWeightInKg != null) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val trendStr = "Trend: ${WeightConverter.formatDisplay(summary.smoothedTrendWeightInKg, displayUnit, 1)}"
+
+                    Surface(
+                        shape = MaterialTheme.shapes.small,
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh
+                    ) {
+                        Text(
+                            text = trendStr,
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+
+                    summary.weeklyChangeKg?.let { weeklyChange ->
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        val convertedChange = WeightConverter.fromCanonicalKg(weeklyChange, displayUnit)
+                        val roundedChange = WeightConverter.roundTo(convertedChange, 1)
+                        val absChange = abs(roundedChange)
+                        val isLoss = roundedChange < 0
+                        val directionWord = if (isLoss) "decreasing" else if (roundedChange > 0) "increasing" else "unchanged"
+                        val changeText = "$directionWord (${if (roundedChange > 0) "+" else ""}$roundedChange ${displayUnit.symbol}/wk)"
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.semantics { contentDescription = changeText }
+                        ) {
+                            Icon(
+                                imageVector = if (isLoss) Icons.AutoMirrored.Filled.TrendingDown else Icons.AutoMirrored.Filled.TrendingUp,
+                                contentDescription = null,
+                                tint = if (isLoss) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
+                                modifier = Modifier.height(18.dp).width(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = changeText,
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Sufficiency & Stability Status Badges
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    val sufficiencyLabel = when (summary.dataSufficiency) {
+                        DataSufficiency.HIGH_CONFIDENCE -> "Sufficient data"
+                        DataSufficiency.MODERATE_CONFIDENCE -> "Moderate data"
+                        DataSufficiency.LOW_CONFIDENCE -> "Limited data"
+                        DataSufficiency.INSUFFICIENT_DATA -> "Not enough data"
+                    }
+
+                    val stabilityLabel = when (summary.trendStability) {
+                        TrendStability.STABLE -> "Stable trend"
+                        TrendStability.MODERATE -> "Variable trend"
+                        TrendStability.UNSTABLE -> "Unstable trend"
+                    }
+
+                    Surface(
+                        shape = MaterialTheme.shapes.extraSmall,
+                        color = MaterialTheme.colorScheme.secondaryContainer
+                    ) {
+                        Text(
+                            text = sufficiencyLabel,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+
+                    Surface(
+                        shape = MaterialTheme.shapes.extraSmall,
+                        color = MaterialTheme.colorScheme.tertiaryContainer
+                    ) {
+                        Text(
+                            text = stabilityLabel,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onTertiaryContainer,
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+            } else {
                 Surface(
                     shape = MaterialTheme.shapes.small,
                     color = MaterialTheme.colorScheme.surfaceContainerHigh
                 ) {
                     Text(
-                        text = trendStr,
+                        text = "Not enough data to estimate statistical trend",
                         style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                     )
-                }
-
-                summary.weightChange7dInKg?.let { changeKg ->
-                    Spacer(modifier = Modifier.width(12.dp))
-
-                    val convertedChange = WeightConverter.fromCanonicalKg(changeKg, displayUnit)
-                    val roundedChange = WeightConverter.roundTo(convertedChange, 1)
-                    val absChange = abs(roundedChange)
-                    val isLoss = roundedChange < 0
-                    val directionWord = if (isLoss) "lost" else "gained"
-                    val changeText = "$absChange ${displayUnit.symbol} $directionWord in 7d"
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.semantics { contentDescription = changeText }
-                    ) {
-                        Icon(
-                            imageVector = if (isLoss) Icons.AutoMirrored.Filled.TrendingDown else Icons.AutoMirrored.Filled.TrendingUp,
-                            contentDescription = null,
-                            tint = if (isLoss) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
-                            modifier = Modifier.height(18.dp).width(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = changeText,
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = if (isLoss) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
-                        )
-                    }
                 }
             }
         }

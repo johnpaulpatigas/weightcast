@@ -106,7 +106,17 @@ class WeightLoggingViewModel @Inject constructor(
     }
 
     fun onTimestampSelected(timestamp: Long) {
-        _uiState.update { it.copy(timestamp = timestamp, validationError = null) }
+        val now = System.currentTimeMillis() + 1000L
+        if (timestamp > now) {
+            _uiState.update {
+                it.copy(
+                    timestamp = System.currentTimeMillis(),
+                    validationError = "Weight log date cannot be in the future."
+                )
+            }
+        } else {
+            _uiState.update { it.copy(timestamp = timestamp, validationError = null) }
+        }
     }
 
     fun onNotesInputChanged(notes: String) {
@@ -119,6 +129,12 @@ class WeightLoggingViewModel @Inject constructor(
 
         if (weightVal == null || weightVal <= 0.0) {
             _uiState.update { it.copy(validationError = "Please enter a valid positive weight.") }
+            return
+        }
+
+        val now = System.currentTimeMillis() + 1000L
+        if (state.timestamp > now) {
+            _uiState.update { it.copy(validationError = "Weight log date cannot be in the future.") }
             return
         }
 

@@ -97,6 +97,17 @@ class WeightLoggingViewModelTest {
     }
 
     @Test
+    fun `onTimestampSelected with future timestamp sets validation error and restricts to current time`() = runTest {
+        viewModel.onOpenAddForm()
+        val futureTime = System.currentTimeMillis() + (24 * 60 * 60 * 1000L)
+        viewModel.onTimestampSelected(futureTime)
+
+        val state = viewModel.uiState.value
+        assertNotNull(state.validationError)
+        assertTrue(state.timestamp <= System.currentTimeMillis() + 1000L)
+    }
+
+    @Test
     fun `onSaveEntry with invalid input sets validation error`() = runTest {
         viewModel.onOpenAddForm()
         viewModel.onWeightInputChanged("-10.0")

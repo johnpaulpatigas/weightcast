@@ -33,7 +33,7 @@ class ValidateWeightEntryUseCase @Inject constructor(
             return ValidationResult.InvalidWeight("Please enter a weight within valid limits (2 kg - 500 kg).")
         }
 
-        val maxAllowedTime = System.currentTimeMillis() + (5 * 60 * 1000L)
+        val maxAllowedTime = System.currentTimeMillis() + 1000L
         if (timestamp > maxAllowedTime) {
             return ValidationResult.FutureDate("Weight log date cannot be in the future.")
         }

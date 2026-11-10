@@ -18,7 +18,7 @@ app/src/main/java/com/johnpaulpatigas/weightcast/
 │   ├── model/             # WeightEntry, WeightGoal, DashboardSummary, ChartPoint, TimeRange
 │   ├── repository/        # Repository interfaces
 │   ├── trend/             # Pure Kotlin Statistical Engine
-│   │   ├── engine/        # DataPreparation, MovingAverageEstimator, TheilSenEstimator, Evaluators
+│   │   ├── engine/        # DataPreparation, DoubleMedianTracker, IncrementalTheilSenEvaluator, TheilSenEstimator, Evaluators
 │   │   └── model/         # WeightTrendEstimate, DataSufficiency, TrendStability, Diagnostics
 │   └── usecase/           # Use cases (Validation, Add/Update/Delete, GetSummary, GetChartData, GetStatisticalTrend)
 ├── feature/               # Feature UI components & ViewModels

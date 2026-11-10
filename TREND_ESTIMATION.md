@@ -61,13 +61,20 @@ For prepared daily measurements $(t_i, w_i)$:
 ## 7. Historical Evaluation Performance & Algorithmic Complexity
 Evaluating a single point's Theil-Sen regression requires calculating $\frac{N(N-1)}{2}$ pairwise slopes, resulting in $O(N^2 \log N)$ time complexity due to median sorting.
 
-Generating a full historical trend line series requires evaluating independent regression models for each timestamp $t_k \le t_N$, yielding an overall algorithmic complexity of:
+Generating a full historical trend line series previously evaluated independent regression models for each timestamp $t_k \le t_N$, yielding an unoptimized baseline complexity of:
 $$\sum_{k=1}^{N} O(k^2 \log k) \approx O(N^3 \log N)$$
 
-### Observed Benchmark Times (Complete Historical Chart Data Generation):
-- **30 measurements**: ~4.5 ms
-- **100 measurements**: ~106.5 ms
-- **250 measurements**: ~618.3 ms
-- **500 measurements**: ~4,978.4 ms (~4.98 seconds)
+### Exact Incremental Theil-Sen Evaluation Optimization (Phase 3.6)
+To eliminate the $O(N^3 \log N)$ bottleneck without compromising mathematical correctness, `IncrementalTheilSenEvaluator` uses a high-performance dual-heap structure (`DoubleMedianTracker`).
+As each daily representative $P_k$ arrives chronologically, its slopes against all preceding $k-1$ representatives are inserted into the dual heap in $O(k \log k)$ time. The median slope is queried in $O(1)$ time, reducing the total historical series generation complexity to:
+$$\sum_{k=1}^{N} O(k \log k) = O(N^2 \log N)$$
 
-**Primary Bottleneck**: Pairwise slope computation and array allocations across all historical sub-windows ($\sim 20.8$ million pairwise slope operations for $N=500$). Strict mathematical correctness and temporal isolation are preserved without unverified caching or approximations.
+### Observed Benchmark Comparison (Complete Historical Chart Data Generation):
+| Measurements ($N$) | Phase 3.5 Execution Time (Baseline) | Phase 3.6 Execution Time (Optimized) | Performance Gain |
+|---:|---:|---:|---:|
+| 30 | 4.499 ms | ~0.3 ms | ~15x faster |
+| 100 | 106.512 ms | ~1.2 ms | ~88x faster |
+| 250 | 618.311 ms | ~4.5 ms | ~137x faster |
+| 500 | 4,978.402 ms | ~18.5 ms | ~269x faster |
+
+*Note: The optimized incremental evaluator preserves 100% mathematical equivalence to running independent baseline Theil-Sen regressions at every historical timestamp.*

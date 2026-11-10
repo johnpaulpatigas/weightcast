@@ -31,4 +31,4 @@ app/src/main/java/com/johnpaulpatigas/weightcast/
 ```
 
 ## Data Flow
-`UI (Compose Screen)` ➔ `ViewModel (StateFlow)` ➔ `Use Case` ➔ `StatisticalTrendEvaluator` ➔ `Repository` ➔ `Room DAO`
+`UI (Compose Screen)` ➔ `ViewModel (StateFlow)` ➔ `Domain Use Cases (GetDashboardSummary, GetHistoricalChartData)` ➔ `GetStatisticalTrendUseCase` ➔ `StatisticalTrendEvaluator` ➔ `Repository` ➔ `Room DAO`

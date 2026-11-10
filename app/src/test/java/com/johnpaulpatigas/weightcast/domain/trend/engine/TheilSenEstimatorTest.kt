@@ -5,7 +5,6 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import kotlin.math.abs
 
 class TheilSenEstimatorTest {
 
@@ -118,7 +117,6 @@ class TheilSenEstimatorTest {
 
         val estimate = TheilSenEstimator.estimate(measurements, evaluationTimestamp = baseTime + (10 * dayMs))
         assertNotNull(estimate)
-        // Median pairwise slope remains exact -0.1 kg/day despite 15kg spike
         assertEquals(-0.1, estimate!!.slopeKgPerDay, 0.001)
     }
 
@@ -201,11 +199,9 @@ class TheilSenEstimatorTest {
             PreparedMeasurement(timestamp = baseTime + (day * dayMs), elapsedDays = day.toDouble(), weightKg = 100.0 - (0.5 * day))
         }
 
-        // Evaluate at day 10
         val estimate10 = TheilSenEstimator.estimate(measurements, evaluationTimestamp = baseTime + (10 * dayMs))
         assertEquals(95.0, estimate10!!.currentTrendKg, 0.0001)
 
-        // Evaluate at day 15 (future eval time relative to dataset)
         val estimate15 = TheilSenEstimator.estimate(measurements, evaluationTimestamp = baseTime + (15 * dayMs))
         assertEquals(92.5, estimate15!!.currentTrendKg, 0.0001)
     }
@@ -255,5 +251,30 @@ class TheilSenEstimatorTest {
         assertEquals(-0.05, estimate!!.slopeKgPerDay, 0.001)
         assertEquals(70.05, estimate.currentTrendKg, 0.001)
         assertTrue("Execution took $durationMs ms, expected < 1000 ms", durationMs < 1000)
+    }
+
+    @Test
+    fun `21 negative fitted trend weight returns null instead of silent clamping`() {
+        // Extreme negative trend extrapolation: initial 5.0kg dropping by 2.0kg/day evaluated 10 days later
+        val measurements = listOf(
+            PreparedMeasurement(timestamp = baseTime, elapsedDays = 0.0, weightKg = 5.0),
+            PreparedMeasurement(timestamp = baseTime + (1 * dayMs), elapsedDays = 1.0, weightKg = 3.0)
+        )
+
+        // Eval at day 10 -> fitted = 5.0 - (2.0 * 10) = -15.0 kg
+        val result = TheilSenEstimator.estimate(measurements, evaluationTimestamp = baseTime + (10 * dayMs))
+        assertNull(result)
+    }
+
+    @Test
+    fun `22 normal positive fitted trend weight succeeds without clamping`() {
+        val measurements = listOf(
+            PreparedMeasurement(timestamp = baseTime, elapsedDays = 0.0, weightKg = 75.0),
+            PreparedMeasurement(timestamp = baseTime + (5 * dayMs), elapsedDays = 5.0, weightKg = 74.0)
+        )
+
+        val result = TheilSenEstimator.estimate(measurements, evaluationTimestamp = baseTime + (5 * dayMs))
+        assertNotNull(result)
+        assertEquals(74.0, result!!.currentTrendKg, 0.0001)
     }
 }

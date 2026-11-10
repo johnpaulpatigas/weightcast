@@ -3,7 +3,6 @@ package com.johnpaulpatigas.weightcast.domain.trend.engine
 import com.johnpaulpatigas.weightcast.domain.trend.model.DataSufficiency
 import com.johnpaulpatigas.weightcast.domain.trend.model.TrendStability
 import com.johnpaulpatigas.weightcast.domain.trend.model.WeightTrendEstimate
-import kotlin.math.max
 import kotlin.math.sqrt
 
 /**
@@ -17,6 +16,7 @@ import kotlin.math.sqrt
  * 4. Fitted trend weight at t_eval: W_trend(t_eval) = beta0 + beta1 * t_eval.
  * 5. Residuals: e_i = w_i - (beta0 + beta1 * t_i).
  * 6. Residual Std Dev: s_e = sqrt( sum(e_i^2) / (n - 2) ) for n > 2, else 0.0.
+ *    (Descriptive residual-scatter statistic around the fitted line; not a confidence or prediction interval).
  */
 object TheilSenEstimator {
 
@@ -29,7 +29,7 @@ object TheilSenEstimator {
      * @param evaluationTimestamp Target epoch timestamp in millis at which to calculate current trend weight.
      * @param dataSufficiency Pre-evaluated or default sufficiency classification.
      * @param trendStability Pre-evaluated or default stability classification.
-     * @return [WeightTrendEstimate] or null if insufficient measurements (< 2) or no valid pairwise slopes.
+     * @return [WeightTrendEstimate] or null if insufficient measurements (< 2), no valid slopes, or negative/non-finite fitted trend weight.
      */
     fun estimate(
         preparedMeasurements: List<PreparedMeasurement>,
@@ -77,7 +77,12 @@ object TheilSenEstimator {
         val beta0 = calculateMedian(intercepts, n)
 
         val evalElapsedDays = (evaluationTimestamp - baselineTimestamp) / MILLIS_PER_DAY
-        val fittedCurrentTrendKg = max(0.0, beta0 + (beta1 * evalElapsedDays))
+        val fittedCurrentTrendKg = beta0 + (beta1 * evalElapsedDays)
+
+        // Reject negative or non-finite fitted current trend weight (do not silently clamp to zero)
+        if (fittedCurrentTrendKg < 0.0 || fittedCurrentTrendKg.isNaN() || fittedCurrentTrendKg.isInfinite()) {
+            return null
+        }
 
         var sumSquaredResiduals = 0.0
         for (i in 0 until n) {

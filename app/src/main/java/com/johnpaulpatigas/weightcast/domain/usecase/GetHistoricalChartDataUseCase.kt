@@ -18,8 +18,13 @@ class GetHistoricalChartDataUseCase @Inject constructor(
 
             val sortedAsc = allEntries.sortedBy { it.timestamp }
             val maTrendMap = TrendCalculator.calculate7DayMovingAverage(sortedAsc).toMap()
+            val latestTimestamp = sortedAsc.last().timestamp
 
-            val filteredEntries = TrendCalculator.filterEntriesByTimeRange(sortedAsc, timeRange)
+            val filteredEntries = TrendCalculator.filterEntriesByTimeRange(
+                entries = sortedAsc,
+                range = timeRange,
+                nowMillis = latestTimestamp
+            )
 
             filteredEntries.map { entry ->
                 val trendResult = StatisticalTrendEvaluator.evaluateTrend(

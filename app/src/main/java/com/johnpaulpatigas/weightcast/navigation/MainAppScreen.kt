@@ -1,6 +1,7 @@
 package com.johnpaulpatigas.weightcast.navigation
 
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -60,7 +61,9 @@ fun MainAppScreen(
 
     if (isExpandedWidth) {
         // Adaptive Navigation Rail for larger screens / tablets
-        Scaffold { innerPadding ->
+        Scaffold(
+            contentWindowInsets = WindowInsets(0.dp)
+        ) { innerPadding ->
             Row(
                 modifier = Modifier
                     .fillMaxSize()
@@ -134,12 +137,13 @@ fun MainAppScreen(
                         )
                     }
                 }
-            }
+            },
+            contentWindowInsets = WindowInsets(0.dp)
         ) { innerPadding ->
             NavHost(
                 navController = navController,
                 startDestination = Screen.Dashboard.route,
-                modifier = Modifier.padding(innerPadding)
+                modifier = Modifier.padding(bottom = innerPadding.calculateBottomPadding())
             ) {
                 composable(Screen.Dashboard.route) {
                     DashboardScreen(

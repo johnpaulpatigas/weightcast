@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -37,7 +38,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.johnpaulpatigas.weightcast.core.util.DateTimeUtils
@@ -56,7 +56,6 @@ fun WeightHistoryScreen(
     val uiState by viewModel.uiState.collectAsState()
     var entryToDelete by remember { mutableStateOf<WeightEntry?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
     val groupedEntries = remember(uiState.filteredEntries) {
         uiState.filteredEntries.groupBy { DateTimeUtils.formatMonthYear(it.timestamp) }
@@ -67,20 +66,20 @@ fun WeightHistoryScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Analytics & History",
+                        text = "Analytics",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
                 },
-                scrollBehavior = scrollBehavior,
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    containerColor = MaterialTheme.colorScheme.background,
                     titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
+        contentWindowInsets = WindowInsets(0.dp),
+        modifier = modifier
     ) { paddingValues ->
         Column(
             modifier = Modifier

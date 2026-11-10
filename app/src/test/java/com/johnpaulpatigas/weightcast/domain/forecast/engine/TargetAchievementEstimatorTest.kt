@@ -2,6 +2,7 @@ package com.johnpaulpatigas.weightcast.domain.forecast.engine
 
 import com.johnpaulpatigas.weightcast.domain.forecast.model.ForecastAvailability
 import com.johnpaulpatigas.weightcast.domain.forecast.model.ForecastAvailabilityStatus
+import com.johnpaulpatigas.weightcast.domain.trend.engine.PreparedMeasurement
 import com.johnpaulpatigas.weightcast.domain.trend.model.DataSufficiency
 import com.johnpaulpatigas.weightcast.domain.trend.model.TrendStability
 import com.johnpaulpatigas.weightcast.domain.trend.model.WeightTrendEstimate
@@ -13,6 +14,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class TargetAchievementEstimatorTest {
+
+    private val dayMs = 86_400_000L
+    private val baseTs = 1000L
 
     private val availableStatus = ForecastAvailability(
         status = ForecastAvailabilityStatus.AVAILABLE,
@@ -41,63 +45,98 @@ class TargetAchievementEstimatorTest {
         residualStdDevKg = 0.2
     )
 
+    private fun sampleLossMeasurements(): List<PreparedMeasurement> {
+        return (0 until 14).map { day ->
+            PreparedMeasurement(
+                timestamp = baseTs + (day * dayMs),
+                weightKg = 80.0 - (0.1 * day),
+                elapsedDays = day.toDouble()
+            )
+        }
+    }
+
+    private fun sampleGainMeasurements(): List<PreparedMeasurement> {
+        return (0 until 14).map { day ->
+            PreparedMeasurement(
+                timestamp = baseTs + (day * dayMs),
+                weightKg = 60.0 + (0.05 * day),
+                elapsedDays = day.toDouble()
+            )
+        }
+    }
+
     @Test
     fun `target already achieved returns zero days to target`() {
         val result = TargetAchievementEstimator.estimateTargetAchievement(
             targetWeightKg = 80.0,
+            preparedMeasurements = sampleLossMeasurements(),
             estimate = weightLossEstimate,
-            evaluationTimestamp = 1000L,
+            evaluationTimestamp = baseTs + (13 * dayMs),
             overallAvailability = availableStatus
         )
 
         assertTrue(result.isAchievable)
         assertTrue(result.isAlreadyAchieved)
         assertEquals(0.0, result.estimatedDaysToTarget!!, 0.001)
+        assertEquals(1.0, result.reachingRatio!!, 0.001)
     }
 
     @Test
-    fun `target in direction of weight loss estimates correct days to target`() {
-        // Target = 75 kg, current = 80 kg, slope = -0.1 kg/day -> 50 days to target
+    fun `target in direction of weight loss estimates correct days to target and bootstrap bounds`() {
+        val evalTs = baseTs + (13 * dayMs)
         val result = TargetAchievementEstimator.estimateTargetAchievement(
             targetWeightKg = 75.0,
+            preparedMeasurements = sampleLossMeasurements(),
             estimate = weightLossEstimate,
-            evaluationTimestamp = 1000L,
-            overallAvailability = availableStatus
+            evaluationTimestamp = evalTs,
+            overallAvailability = availableStatus,
+            bootstrapIterations = 100,
+            randomSeed = 42L
         )
 
         assertTrue(result.isAchievable)
         assertFalse(result.isAlreadyAchieved)
-        assertEquals(50.0, result.estimatedDaysToTarget!!, 0.01)
+        assertEquals(50.0, result.estimatedDaysToTarget!!, 0.1)
         assertNotNull(result.estimatedAchievementTimestamp)
+        assertNotNull(result.lowerBoundDaysToTarget)
+        assertNotNull(result.upperBoundDaysToTarget)
+        assertTrue(result.reachingRatio!! >= 0.70)
+        assertTrue(result.lowerBoundDaysToTarget!! <= result.estimatedDaysToTarget!!)
+        assertTrue(result.estimatedDaysToTarget!! <= result.upperBoundDaysToTarget!!)
     }
 
     @Test
     fun `target in direction of weight gain estimates correct days to target`() {
-        // Target = 65 kg, current = 60 kg, slope = 0.05 kg/day -> 100 days to target
+        val evalTs = baseTs + (13 * dayMs)
         val result = TargetAchievementEstimator.estimateTargetAchievement(
             targetWeightKg = 65.0,
+            preparedMeasurements = sampleGainMeasurements(),
             estimate = weightGainEstimate,
-            evaluationTimestamp = 1000L,
-            overallAvailability = availableStatus
+            evaluationTimestamp = evalTs,
+            overallAvailability = availableStatus,
+            bootstrapIterations = 100,
+            randomSeed = 42L
         )
 
         assertTrue(result.isAchievable)
         assertFalse(result.isAlreadyAchieved)
-        assertEquals(100.0, result.estimatedDaysToTarget!!, 0.01)
+        assertEquals(100.0, result.estimatedDaysToTarget!!, 0.1)
+        assertTrue(result.reachingRatio!! >= 0.70)
     }
 
     @Test
     fun `target opposite direction of travel returns unachievable`() {
-        // Current = 80 kg, target = 85 kg, but slope = -0.1 (losing weight)
         val result = TargetAchievementEstimator.estimateTargetAchievement(
             targetWeightKg = 85.0,
+            preparedMeasurements = sampleLossMeasurements(),
             estimate = weightLossEstimate,
-            evaluationTimestamp = 1000L,
+            evaluationTimestamp = baseTs,
             overallAvailability = availableStatus
         )
 
         assertFalse(result.isAchievable)
         assertNull(result.estimatedDaysToTarget)
+        assertEquals(0.0, result.reachingRatio!!, 0.001)
     }
 
     @Test
@@ -105,23 +144,25 @@ class TargetAchievementEstimatorTest {
         val zeroSlopeEstimate = weightLossEstimate.copy(slopeKgPerDay = 0.0)
         val result = TargetAchievementEstimator.estimateTargetAchievement(
             targetWeightKg = 70.0,
+            preparedMeasurements = sampleLossMeasurements(),
             estimate = zeroSlopeEstimate,
-            evaluationTimestamp = 1000L,
+            evaluationTimestamp = baseTs,
             overallAvailability = availableStatus
         )
 
         assertFalse(result.isAchievable)
         assertNull(result.estimatedDaysToTarget)
+        assertEquals(0.0, result.reachingRatio!!, 0.001)
     }
 
     @Test
     fun `target date exceeding 10 years horizon returns unachievable`() {
-        // Slope = -0.0001 kg/day, target diff = 10 kg -> 100,000 days (> 3650 days max horizon)
         val slowEstimate = weightLossEstimate.copy(slopeKgPerDay = -0.0001)
         val result = TargetAchievementEstimator.estimateTargetAchievement(
             targetWeightKg = 70.0,
+            preparedMeasurements = sampleLossMeasurements(),
             estimate = slowEstimate,
-            evaluationTimestamp = 1000L,
+            evaluationTimestamp = baseTs,
             overallAvailability = availableStatus
         )
 

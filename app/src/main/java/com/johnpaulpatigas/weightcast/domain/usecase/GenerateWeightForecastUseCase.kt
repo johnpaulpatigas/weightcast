@@ -25,7 +25,7 @@ class GenerateWeightForecastUseCase @Inject constructor(
             weightRepository.getAllEntries(),
             goalRepository.getGoal()
         ) { rawEntries, goal ->
-            invoke(rawEntries, goal, evaluationTimestamp)
+            invoke(rawEntries, goal, evaluationTimestamp, bootstrapIterations = 50)
         }
     }
 
@@ -58,9 +58,12 @@ class GenerateWeightForecastUseCase @Inject constructor(
 
         val targetEstimate = TargetAchievementEstimator.estimateTargetAchievement(
             targetWeightKg = goal?.targetWeightInKg,
+            preparedMeasurements = validInWindow,
             estimate = trendResult.estimate,
             evaluationTimestamp = evaluationTimestamp,
-            overallAvailability = forecastResult.overallAvailability
+            overallAvailability = forecastResult.overallAvailability,
+            bootstrapIterations = bootstrapIterations,
+            randomSeed = randomSeed
         )
 
         return Pair(forecastResult, targetEstimate)

@@ -6,6 +6,7 @@ WeightCast uses an authoritative, non-parametric statistical approach to estimat
 2. **Independent Data Sufficiency & Trend Stability Evaluation**: Evaluates whether measurement data volume/span is adequate and whether the trend direction is temporally consistent.
 3. **No Moving-Average Fallback**: Historical charts do not substitute 7-day moving averages as statistical trends. When $N < 3$ distinct daily representatives exist, actual measurements are plotted without a statistical trend line.
 4. **Single Domain Pathway**: All domain features route statistical evaluations through `GetStatisticalTrendUseCase`.
+5. **Non-Parametric Forecasting**: Future weight projections and residual bootstrap prediction intervals are documented in [FORECASTING.md](FORECASTING.md).
 
 ## 2. Production Domain Integration & Metric Hierarchy
 - **Primary Metric**: Latest Recorded Weight (Authoritative actual measurement; never replaced with a regression estimate).

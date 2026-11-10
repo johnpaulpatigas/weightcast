@@ -139,12 +139,11 @@ fun WeightLoggingScreen(
         }
     }
 
-    // Weight Entry Form Dialog
+    // Weight Entry Form Bottom Sheet
     if (uiState.isFormOpen) {
-        WeightLoggingDialog(
+        LogWeightBottomSheet(
             uiState = uiState,
             onWeightInputChanged = { viewModel.onWeightInputChanged(it) },
-            onUnitSelected = { viewModel.onUnitSelected(it) },
             onTimestampSelected = { viewModel.onTimestampSelected(it) },
             onNotesInputChanged = { viewModel.onNotesInputChanged(it) },
             onSaveEntry = { allowDuplicate -> viewModel.onSaveEntry(allowDuplicate) },
@@ -179,75 +178,5 @@ fun WeightLoggingScreen(
                 }
             }
         )
-    }
-}
-
-@Composable
-fun WeightEntryItem(
-    entry: WeightEntry,
-    displayUnit: WeightUnit,
-    onEditClick: () -> Unit,
-    onDeleteClick: () -> Unit
-) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.medium,
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
-        tonalElevation = 1.dp
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = entry.getFormattedWeight(displayUnit),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-
-                Spacer(modifier = Modifier.height(2.dp))
-
-                Text(
-                    text = DateTimeUtils.formatDateTime(entry.timestamp),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                if (!entry.notes.isNullOrBlank()) {
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = "Note: ${entry.notes}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.outline
-                    )
-                }
-            }
-
-            Row {
-                IconButton(
-                    onClick = onEditClick
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = "Edit entry recorded on ${DateTimeUtils.formatDateTime(entry.timestamp)}",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-                IconButton(
-                    onClick = onDeleteClick
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = "Delete entry recorded on ${DateTimeUtils.formatDateTime(entry.timestamp)}",
-                        tint = MaterialTheme.colorScheme.error
-                    )
-                }
-            }
-        }
     }
 }

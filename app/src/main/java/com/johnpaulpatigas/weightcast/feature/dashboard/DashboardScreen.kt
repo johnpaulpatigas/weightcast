@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.TrendingDown
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
@@ -37,6 +38,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -61,6 +63,7 @@ fun DashboardScreen(
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
     Scaffold(
         topBar = {
@@ -72,6 +75,7 @@ fun DashboardScreen(
                         fontWeight = FontWeight.Bold
                     )
                 },
+                scrollBehavior = scrollBehavior,
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                     titleContentColor = MaterialTheme.colorScheme.onSurface
@@ -88,18 +92,18 @@ fun DashboardScreen(
                 shape = MaterialTheme.shapes.large
             )
         },
-        modifier = modifier
+        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
     ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
-            contentPadding = PaddingValues(16.dp),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 88.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // 1. Primary Weight Metric & Trend Overview Card
+            // 1. Expressive Hero Weight Card
             item {
-                CurrentWeightOverviewCard(
+                HeroWeightCard(
                     summary = uiState.summary,
                     displayUnit = uiState.displayUnit
                 )
@@ -131,7 +135,7 @@ fun DashboardScreen(
                 )
             }
 
-            // 5. Recent Weight Entries List Header
+            // 5. Recent Logs Header
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -150,7 +154,7 @@ fun DashboardScreen(
                 item {
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = MaterialTheme.shapes.medium,
+                        shape = MaterialTheme.shapes.large,
                         color = MaterialTheme.colorScheme.surfaceContainerLow
                     ) {
                         Column(
@@ -174,12 +178,15 @@ fun DashboardScreen(
                     }
                 }
             } else {
-                items(
+                itemsIndexed(
                     items = uiState.summary.recentEntries,
-                    key = { it.id }
-                ) { entry ->
+                    key = { _, entry -> entry.id }
+                ) { index, entry ->
+                    val prevWeight = uiState.summary.recentEntries.getOrNull(index + 1)?.weightInKg
+
                     WeightEntryItem(
                         entry = entry,
+                        previousEntryWeightInKg = prevWeight,
                         displayUnit = uiState.displayUnit,
                         onEditClick = {},
                         onDeleteClick = {}
@@ -191,15 +198,17 @@ fun DashboardScreen(
 }
 
 @Composable
-private fun CurrentWeightOverviewCard(
+fun HeroWeightCard(
     summary: DashboardSummary,
     displayUnit: WeightUnit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.extraLarge,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(
             modifier = Modifier
@@ -227,9 +236,9 @@ private fun CurrentWeightOverviewCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-            // Primary: Authoritative Recorded Weight
+            // Hero Metric Readout ("67.6 kg")
             val currentStr = summary.currentWeightInKg?.let {
                 WeightConverter.formatDisplay(it, displayUnit, 1)
             } ?: "No data"
@@ -239,13 +248,13 @@ private fun CurrentWeightOverviewCard(
                     text = weightText,
                     style = MaterialTheme.typography.displayLarge,
                     fontWeight = FontWeight.ExtraBold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
-            // Secondary: Statistical Trend & Status Badges
+            // Statistical Trend & Rate Chips
             val isSufficient = summary.dataSufficiency != DataSufficiency.INSUFFICIENT_DATA
 
             if (isSufficient && summary.smoothedTrendWeightInKg != null) {
@@ -257,23 +266,22 @@ private fun CurrentWeightOverviewCard(
 
                     Surface(
                         shape = MaterialTheme.shapes.small,
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh
+                        color = MaterialTheme.colorScheme.primaryContainer
                     ) {
                         Text(
                             text = trendStr,
                             style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
                         )
                     }
 
                     summary.weeklyChangeKg?.let { weeklyChange ->
-                        Spacer(modifier = Modifier.width(12.dp))
+                        Spacer(modifier = Modifier.width(10.dp))
 
                         val convertedChange = WeightConverter.fromCanonicalKg(weeklyChange, displayUnit)
                         val roundedChange = WeightConverter.roundTo(convertedChange, 1)
-                        val absChange = abs(roundedChange)
                         val isLoss = roundedChange < 0
                         val directionWord = if (isLoss) "decreasing" else if (roundedChange > 0) "increasing" else "unchanged"
                         val changeText = "$directionWord (${if (roundedChange > 0) "+" else ""}$roundedChange ${displayUnit.symbol}/wk)"
@@ -324,7 +332,7 @@ private fun CurrentWeightOverviewCard(
                             text = sufficiencyLabel,
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                         )
                     }
 
@@ -336,7 +344,7 @@ private fun CurrentWeightOverviewCard(
                             text = stabilityLabel,
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onTertiaryContainer,
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                         )
                     }
                 }
@@ -349,7 +357,7 @@ private fun CurrentWeightOverviewCard(
                         text = "Not enough data to estimate statistical trend",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
                     )
                 }
             }
@@ -368,7 +376,9 @@ private fun TargetGoalCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f)
+        ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(

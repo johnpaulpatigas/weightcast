@@ -88,8 +88,10 @@ fun WeightTrendChart(
                 Spacer(modifier = Modifier.weight(1f))
 
                 LegendItem(color = MaterialTheme.colorScheme.primary, label = "Actual")
-                Spacer(modifier = Modifier.width(12.dp))
-                LegendItem(color = MaterialTheme.colorScheme.tertiary, label = "Trend")
+                if (chartPoints.any { it.smoothedTrendInKg != null }) {
+                    Spacer(modifier = Modifier.width(12.dp))
+                    LegendItem(color = MaterialTheme.colorScheme.tertiary, label = "Trend")
+                }
             }
 
             // Interactive Tooltip Overlay when a point is selected
@@ -353,11 +355,13 @@ private fun InteractiveChartCanvas(
             }
         }
 
-        drawPath(
-            path = trendPath,
-            color = trendColor,
-            style = Stroke(width = 2.5.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(12f, 8f)))
-        )
+        if (!firstTrend) {
+            drawPath(
+                path = trendPath,
+                color = trendColor,
+                style = Stroke(width = 2.5.dp.toPx(), pathEffect = PathEffect.dashPathEffect(floatArrayOf(12f, 8f)))
+            )
+        }
 
         // Draw Actual Data Nodes
         pointsInUnit.forEach { (point, actual, _) ->

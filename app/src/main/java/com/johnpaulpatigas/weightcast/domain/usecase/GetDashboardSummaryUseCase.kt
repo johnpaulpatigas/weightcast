@@ -1,12 +1,14 @@
 package com.johnpaulpatigas.weightcast.domain.usecase
 
-import com.johnpaulpatigas.weightcast.core.util.TrendCalculator
 import com.johnpaulpatigas.weightcast.domain.model.DashboardSummary
 import com.johnpaulpatigas.weightcast.domain.model.GoalType
 import com.johnpaulpatigas.weightcast.domain.model.WeightEntry
 import com.johnpaulpatigas.weightcast.domain.model.WeightGoal
 import com.johnpaulpatigas.weightcast.domain.repository.GoalRepository
 import com.johnpaulpatigas.weightcast.domain.repository.WeightRepository
+import com.johnpaulpatigas.weightcast.domain.trend.engine.StatisticalTrendEvaluator
+import com.johnpaulpatigas.weightcast.domain.trend.model.DataSufficiency
+import com.johnpaulpatigas.weightcast.domain.trend.model.TrendStability
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import javax.inject.Inject
@@ -27,23 +29,35 @@ class GetDashboardSummaryUseCase @Inject constructor(
             val sortedAsc = entries.sortedBy { it.timestamp }
             val latestEntry = sortedAsc.last()
             val currentKg = latestEntry.weightInKg
+            val latestTimestamp = latestEntry.timestamp
 
-            val maTrendList = TrendCalculator.calculate7DayMovingAverage(sortedAsc)
-            val latestTrendKg = maTrendList.lastOrNull()?.second
+            val trendResult = StatisticalTrendEvaluator.evaluateTrend(
+                rawEntries = sortedAsc,
+                evaluationTimestamp = latestTimestamp
+            )
 
-            val change7d = TrendCalculator.calculateWeightChange(sortedAsc, days = 7)
+            val estimate = trendResult.estimate
+            val trendKg = estimate?.currentTrendKg
+            val weeklyChangeKg = estimate?.weeklyChangeKg
+            val sufficiency = trendResult.sufficiency
+            val stability = estimate?.trendStability ?: TrendStability.UNSTABLE
 
             val (progressPct, targetDateMillis) = calculateGoalMetrics(
                 entries = sortedAsc,
                 currentKg = currentKg,
-                change7d = change7d,
+                weeklyChangeKg = weeklyChangeKg,
+                sufficiency = sufficiency,
                 goal = goal
             )
 
             DashboardSummary(
                 currentWeightInKg = currentKg,
-                smoothedTrendWeightInKg = latestTrendKg ?: currentKg,
-                weightChange7dInKg = change7d,
+                smoothedTrendWeightInKg = trendKg,
+                weeklyChangeKg = weeklyChangeKg,
+                trendEstimate = estimate,
+                dataSufficiency = sufficiency,
+                trendStability = stability,
+                trendDiagnostics = trendResult.diagnostics,
                 targetGoal = goal,
                 targetProgressPercentage = progressPct,
                 estimatedTargetDateMillis = targetDateMillis,
@@ -55,7 +69,8 @@ class GetDashboardSummaryUseCase @Inject constructor(
     private fun calculateGoalMetrics(
         entries: List<WeightEntry>,
         currentKg: Double,
-        change7d: Double?,
+        weeklyChangeKg: Double?,
+        sufficiency: DataSufficiency,
         goal: WeightGoal?
     ): Pair<Float?, Long?> {
         if (goal == null || entries.isEmpty()) return Pair(null, null)
@@ -72,8 +87,8 @@ class GetDashboardSummaryUseCase @Inject constructor(
         val clampedProgress = rawProgress.coerceIn(0.0f, 1.0f)
 
         var targetDate: Long? = null
-        if (change7d != null && change7d != 0.0) {
-            val dailyRate = change7d / 7.0
+        if (weeklyChangeKg != null && weeklyChangeKg != 0.0 && sufficiency != DataSufficiency.INSUFFICIENT_DATA) {
+            val dailyRate = weeklyChangeKg / 7.0
             val remainingKg = targetKg - currentKg
 
             val isMovingTowardsGoal = when (goal.goalType) {

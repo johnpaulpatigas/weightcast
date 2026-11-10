@@ -4,9 +4,9 @@ import com.johnpaulpatigas.weightcast.core.model.WeightUnit
 import com.johnpaulpatigas.weightcast.domain.model.TimeRange
 import com.johnpaulpatigas.weightcast.domain.model.WeightEntry
 import com.johnpaulpatigas.weightcast.domain.trend.engine.IncrementalTheilSenEvaluator
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -32,7 +32,7 @@ class HistoricalChartPerformanceBenchmarkTest {
         getHistoricalChartDataUseCase = GetHistoricalChartDataUseCase(
             weightRepository = weightRepository,
             getStatisticalTrendUseCase = getStatisticalTrendUseCase,
-            defaultDispatcher = UnconfinedTestDispatcher()
+            defaultDispatcher = Dispatchers.Unconfined
         )
     }
 
@@ -65,14 +65,14 @@ class HistoricalChartPerformanceBenchmarkTest {
 
             // Warmup iterations
             repeat(warmupIterations) {
-                getHistoricalChartDataUseCase(TimeRange.ALL_TIME).first()
+                getHistoricalChartDataUseCase(TimeRange.ALL_TIME, includeForecasts = false).first()
             }
 
             // Repeated measurement iterations
             val runTimesMs = DoubleArray(measuredIterations)
             repeat(measuredIterations) { iter ->
                 val elapsedNanos = measureNanoTime {
-                    val points = getHistoricalChartDataUseCase(TimeRange.ALL_TIME).first()
+                    val points = getHistoricalChartDataUseCase(TimeRange.ALL_TIME, includeForecasts = false).first()
                     assertEquals(n, points.size)
                 }
                 runTimesMs[iter] = elapsedNanos / 1_000_000.0

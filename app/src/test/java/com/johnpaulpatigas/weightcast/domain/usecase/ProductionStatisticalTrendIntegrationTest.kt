@@ -22,6 +22,7 @@ class ProductionStatisticalTrendIntegrationTest {
     private lateinit var weightRepository: FakeWeightRepository
     private lateinit var goalRepository: FakeGoalRepository
     private lateinit var getStatisticalTrendUseCase: GetStatisticalTrendUseCase
+    private lateinit var generateWeightForecastUseCase: GenerateWeightForecastUseCase
     private lateinit var getDashboardSummaryUseCase: GetDashboardSummaryUseCase
     private lateinit var getHistoricalChartDataUseCase: GetHistoricalChartDataUseCase
 
@@ -30,7 +31,8 @@ class ProductionStatisticalTrendIntegrationTest {
         weightRepository = FakeWeightRepository()
         goalRepository = FakeGoalRepository()
         getStatisticalTrendUseCase = GetStatisticalTrendUseCase(weightRepository)
-        getDashboardSummaryUseCase = GetDashboardSummaryUseCase(weightRepository, goalRepository, getStatisticalTrendUseCase)
+        generateWeightForecastUseCase = GenerateWeightForecastUseCase(weightRepository, goalRepository, getStatisticalTrendUseCase)
+        getDashboardSummaryUseCase = GetDashboardSummaryUseCase(weightRepository, goalRepository, getStatisticalTrendUseCase, generateWeightForecastUseCase)
         getHistoricalChartDataUseCase = GetHistoricalChartDataUseCase(weightRepository, getStatisticalTrendUseCase)
     }
 
@@ -131,8 +133,8 @@ class ProductionStatisticalTrendIntegrationTest {
         }
 
         val chartData7d = getHistoricalChartDataUseCase(TimeRange.DAYS_7).first()
-        assertTrue(chartData7d.size <= 8)
-        assertNotNull(chartData7d.last().actualWeightInKg)
-        assertNotNull(chartData7d.last().smoothedTrendInKg)
+        assertTrue(chartData7d.size <= 12)
+        assertNotNull(chartData7d.first().actualWeightInKg)
+        assertNotNull(chartData7d.first().smoothedTrendInKg)
     }
 }

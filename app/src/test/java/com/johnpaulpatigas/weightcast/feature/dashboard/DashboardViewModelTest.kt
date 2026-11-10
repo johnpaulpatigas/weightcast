@@ -5,8 +5,10 @@ import com.johnpaulpatigas.weightcast.domain.model.TimeRange
 import com.johnpaulpatigas.weightcast.domain.model.WeightEntry
 import com.johnpaulpatigas.weightcast.domain.usecase.FakeGoalRepository
 import com.johnpaulpatigas.weightcast.domain.usecase.FakeWeightRepository
+import com.johnpaulpatigas.weightcast.domain.usecase.GenerateWeightForecastUseCase
 import com.johnpaulpatigas.weightcast.domain.usecase.GetDashboardSummaryUseCase
 import com.johnpaulpatigas.weightcast.domain.usecase.GetHistoricalChartDataUseCase
+import com.johnpaulpatigas.weightcast.domain.usecase.GetStatisticalTrendUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -33,8 +35,9 @@ class DashboardViewModelTest {
         weightRepository = FakeWeightRepository()
         goalRepository = FakeGoalRepository()
 
-        val getTrendUseCase = com.johnpaulpatigas.weightcast.domain.usecase.GetStatisticalTrendUseCase(weightRepository)
-        val getSummaryUseCase = GetDashboardSummaryUseCase(weightRepository, goalRepository, getTrendUseCase)
+        val getTrendUseCase = GetStatisticalTrendUseCase(weightRepository)
+        val generateForecastUseCase = GenerateWeightForecastUseCase(weightRepository, goalRepository, getTrendUseCase)
+        val getSummaryUseCase = GetDashboardSummaryUseCase(weightRepository, goalRepository, getTrendUseCase, generateForecastUseCase)
         val getChartDataUseCase = GetHistoricalChartDataUseCase(weightRepository, getTrendUseCase, testDispatcher)
 
         viewModel = DashboardViewModel(

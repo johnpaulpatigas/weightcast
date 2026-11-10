@@ -33,6 +33,7 @@ class GetDashboardSummaryUseCaseTest {
     private lateinit var weightRepository: FakeWeightRepository
     private lateinit var goalRepository: FakeGoalRepository
     private lateinit var getStatisticalTrendUseCase: GetStatisticalTrendUseCase
+    private lateinit var generateWeightForecastUseCase: GenerateWeightForecastUseCase
     private lateinit var useCase: GetDashboardSummaryUseCase
 
     @Before
@@ -40,7 +41,8 @@ class GetDashboardSummaryUseCaseTest {
         weightRepository = FakeWeightRepository()
         goalRepository = FakeGoalRepository()
         getStatisticalTrendUseCase = GetStatisticalTrendUseCase(weightRepository)
-        useCase = GetDashboardSummaryUseCase(weightRepository, goalRepository, getStatisticalTrendUseCase)
+        generateWeightForecastUseCase = GenerateWeightForecastUseCase(weightRepository, goalRepository, getStatisticalTrendUseCase)
+        useCase = GetDashboardSummaryUseCase(weightRepository, goalRepository, getStatisticalTrendUseCase, generateWeightForecastUseCase)
     }
 
     @Test

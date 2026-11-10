@@ -20,6 +20,7 @@ class TemporalIntegrityTest {
     private lateinit var weightRepository: FakeWeightRepository
     private lateinit var goalRepository: FakeGoalRepository
     private lateinit var getStatisticalTrendUseCase: GetStatisticalTrendUseCase
+    private lateinit var generateWeightForecastUseCase: GenerateWeightForecastUseCase
     private lateinit var getDashboardSummaryUseCase: GetDashboardSummaryUseCase
     private lateinit var getHistoricalChartDataUseCase: GetHistoricalChartDataUseCase
 
@@ -28,7 +29,8 @@ class TemporalIntegrityTest {
         weightRepository = FakeWeightRepository()
         goalRepository = FakeGoalRepository()
         getStatisticalTrendUseCase = GetStatisticalTrendUseCase(weightRepository)
-        getDashboardSummaryUseCase = GetDashboardSummaryUseCase(weightRepository, goalRepository, getStatisticalTrendUseCase)
+        generateWeightForecastUseCase = GenerateWeightForecastUseCase(weightRepository, goalRepository, getStatisticalTrendUseCase)
+        getDashboardSummaryUseCase = GetDashboardSummaryUseCase(weightRepository, goalRepository, getStatisticalTrendUseCase, generateWeightForecastUseCase)
         getHistoricalChartDataUseCase = GetHistoricalChartDataUseCase(weightRepository, getStatisticalTrendUseCase)
     }
 
@@ -103,7 +105,8 @@ class TemporalIntegrityTest {
         weightRepository.addEntry(WeightEntry(id = 2, weightInKg = 79.0, originalUnit = WeightUnit.KG, timestamp = baseTime + (1 * dayMs)))
 
         val chartPoints = getHistoricalChartDataUseCase(TimeRange.ALL_TIME).first()
-        assertEquals(2, chartPoints.size)
+        // 2 historical points
+        assertEquals(2, chartPoints.filter { it.actualWeightInKg != null }.size)
         assertEquals(80.0, chartPoints[0].actualWeightInKg!!, 0.001)
         assertNull(chartPoints[0].smoothedTrendInKg)
         assertEquals(79.0, chartPoints[1].actualWeightInKg!!, 0.001)

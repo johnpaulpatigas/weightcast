@@ -27,9 +27,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
@@ -46,7 +43,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.johnpaulpatigas.weightcast.domain.model.GoalType
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -95,10 +91,8 @@ fun GoalsSettingsScreen(
             item {
                 GoalSettingCard(
                     targetWeightInput = uiState.targetWeightInput,
-                    selectedGoalType = uiState.selectedGoalType,
-                    isGoalSaved = uiState.isGoalSaved,
+                    showSaveButton = uiState.showSaveButton,
                     onTargetWeightChanged = { viewModel.onTargetWeightChanged(it) },
-                    onGoalTypeChanged = { viewModel.onGoalTypeChanged(it) },
                     onSaveGoal = { viewModel.onSaveGoal() }
                 )
             }
@@ -234,14 +228,11 @@ fun GoalsSettingsScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GoalSettingCard(
     targetWeightInput: String,
-    selectedGoalType: GoalType,
-    isGoalSaved: Boolean,
+    showSaveButton: Boolean,
     onTargetWeightChanged: (String) -> Unit,
-    onGoalTypeChanged: (GoalType) -> Unit,
     onSaveGoal: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -275,51 +266,29 @@ fun GoalSettingCard(
                 onValueChange = onTargetWeightChanged,
                 label = { Text("Target Weight") },
                 suffix = { Text("kg", fontWeight = FontWeight.Bold) },
-                placeholder = { Text("65.0") },
+                placeholder = { Text("65.00") },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 singleLine = true,
                 shape = MaterialTheme.shapes.medium,
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Text(
-                text = "Goal Type",
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                val options = listOf(
-                    GoalType.WEIGHT_LOSS to "Weight Loss",
-                    GoalType.MAINTENANCE to "Maintain",
-                    GoalType.WEIGHT_GAIN to "Weight Gain"
-                )
-                options.forEachIndexed { index, (type, label) ->
-                    SegmentedButton(
-                        selected = selectedGoalType == type,
-                        onClick = { onGoalTypeChanged(type) },
-                        shape = SegmentedButtonDefaults.itemShape(index = index, count = options.size)
-                    ) {
-                        Text(label, fontWeight = if (selectedGoalType == type) FontWeight.Bold else FontWeight.Normal)
-                    }
+            if (showSaveButton) {
+                Button(
+                    onClick = onSaveGoal,
+                    shape = MaterialTheme.shapes.large,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = null
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Save Target Goal",
+                        fontWeight = FontWeight.Bold
+                    )
                 }
-            }
-
-            Button(
-                onClick = onSaveGoal,
-                shape = MaterialTheme.shapes.large,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(
-                    imageVector = if (isGoalSaved) Icons.Default.Check else Icons.Default.Flag,
-                    contentDescription = null
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = if (isGoalSaved) "Goal Saved" else "Save Target Goal",
-                    fontWeight = FontWeight.Bold
-                )
             }
         }
     }

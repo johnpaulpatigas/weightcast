@@ -3,7 +3,6 @@ package com.johnpaulpatigas.weightcast.data.mapper
 import com.johnpaulpatigas.weightcast.core.model.WeightUnit
 import com.johnpaulpatigas.weightcast.data.local.entity.WeightEntryEntity
 import com.johnpaulpatigas.weightcast.data.local.entity.WeightGoalEntity
-import com.johnpaulpatigas.weightcast.domain.model.GoalType
 import com.johnpaulpatigas.weightcast.domain.model.WeightEntry
 import com.johnpaulpatigas.weightcast.domain.model.WeightGoal
 
@@ -36,7 +35,6 @@ fun WeightGoalEntity.toDomain(): WeightGoal {
         id = id,
         targetWeightInKg = targetWeightInKg,
         unit = WeightUnit.fromString(unit),
-        goalType = GoalType.fromString(goalType),
         createdAt = createdAt,
         updatedAt = updatedAt
     )
@@ -47,7 +45,7 @@ fun WeightGoal.toEntity(): WeightGoalEntity {
         id = id,
         targetWeightInKg = targetWeightInKg,
         unit = unit.name,
-        goalType = goalType.name,
+        goalType = "TARGET",
         createdAt = createdAt,
         updatedAt = updatedAt
     )

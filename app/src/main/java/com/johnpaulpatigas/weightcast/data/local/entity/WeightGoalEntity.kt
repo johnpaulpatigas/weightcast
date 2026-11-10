@@ -11,8 +11,8 @@ data class WeightGoalEntity(
     @PrimaryKey
     val id: Long = 1,
     val targetWeightInKg: Double,
-    val unit: String,
-    val goalType: String,
+    val unit: String = "KG",
+    val goalType: String = "TARGET",
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis()
 )

@@ -479,7 +479,7 @@ fun GoalProgressCard(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Goal Progress (${goal.goalType.displayName})",
+                        text = "Goal Progress",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSecondaryContainer

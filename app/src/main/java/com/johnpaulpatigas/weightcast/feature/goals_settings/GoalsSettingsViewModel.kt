@@ -3,7 +3,7 @@ package com.johnpaulpatigas.weightcast.feature.goals_settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.johnpaulpatigas.weightcast.core.model.WeightUnit
-import com.johnpaulpatigas.weightcast.domain.model.GoalType
+import com.johnpaulpatigas.weightcast.core.util.WeightConverter
 import com.johnpaulpatigas.weightcast.domain.model.WeightGoal
 import com.johnpaulpatigas.weightcast.domain.repository.GoalRepository
 import com.johnpaulpatigas.weightcast.domain.repository.WeightRepository
@@ -18,11 +18,17 @@ import javax.inject.Inject
 
 data class GoalsSettingsUiState(
     val targetWeightInput: String = "",
-    val selectedGoalType: GoalType = GoalType.WEIGHT_LOSS,
-    val isGoalSaved: Boolean = false,
+    val savedTargetWeight: String = "",
     val dailyReminderEnabled: Boolean = false,
     val exportStatusMessage: String? = null
-)
+) {
+    val showSaveButton: Boolean
+        get() {
+            val inputVal = targetWeightInput.trim().toDoubleOrNull()
+            val savedVal = savedTargetWeight.trim().toDoubleOrNull()
+            return inputVal != null && inputVal > 0.0 && inputVal != savedVal
+        }
+}
 
 @HiltViewModel
 class GoalsSettingsViewModel @Inject constructor(
@@ -41,11 +47,11 @@ class GoalsSettingsViewModel @Inject constructor(
         viewModelScope.launch {
             goalRepository.getGoal().collect { goal ->
                 if (goal != null) {
+                    val formatted = WeightConverter.roundTo(goal.targetWeightInKg, 2).toString()
                     _uiState.update {
                         it.copy(
-                            targetWeightInput = goal.targetWeightInKg.toString(),
-                            selectedGoalType = goal.goalType,
-                            isGoalSaved = true
+                            targetWeightInput = formatted,
+                            savedTargetWeight = formatted
                         )
                     }
                 }
@@ -54,11 +60,7 @@ class GoalsSettingsViewModel @Inject constructor(
     }
 
     fun onTargetWeightChanged(input: String) {
-        _uiState.update { it.copy(targetWeightInput = input, isGoalSaved = false) }
-    }
-
-    fun onGoalTypeChanged(type: GoalType) {
-        _uiState.update { it.copy(selectedGoalType = type, isGoalSaved = false) }
+        _uiState.update { it.copy(targetWeightInput = input) }
     }
 
     fun onSaveGoal() {
@@ -66,11 +68,16 @@ class GoalsSettingsViewModel @Inject constructor(
         viewModelScope.launch {
             val goal = WeightGoal(
                 targetWeightInKg = targetKg,
-                unit = WeightUnit.KG,
-                goalType = _uiState.value.selectedGoalType
+                unit = WeightUnit.KG
             )
             goalRepository.saveGoal(goal)
-            _uiState.update { it.copy(isGoalSaved = true) }
+            val formatted = WeightConverter.roundTo(targetKg, 2).toString()
+            _uiState.update {
+                it.copy(
+                    savedTargetWeight = formatted,
+                    targetWeightInput = formatted
+                )
+            }
         }
     }
 

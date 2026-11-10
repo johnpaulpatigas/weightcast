@@ -1,7 +1,6 @@
 package com.johnpaulpatigas.weightcast.domain.usecase
 
 import com.johnpaulpatigas.weightcast.domain.model.DashboardSummary
-import com.johnpaulpatigas.weightcast.domain.model.GoalType
 import com.johnpaulpatigas.weightcast.domain.model.WeightEntry
 import com.johnpaulpatigas.weightcast.domain.model.WeightGoal
 import com.johnpaulpatigas.weightcast.domain.repository.GoalRepository
@@ -91,11 +90,7 @@ class GetDashboardSummaryUseCase @Inject constructor(
             val dailyRate = weeklyChangeKg / 7.0
             val remainingKg = targetKg - currentKg
 
-            val isMovingTowardsGoal = when (goal.goalType) {
-                GoalType.WEIGHT_LOSS -> dailyRate < 0 && remainingKg < 0
-                GoalType.WEIGHT_GAIN -> dailyRate > 0 && remainingKg > 0
-                GoalType.MAINTENANCE -> false
-            }
+            val isMovingTowardsGoal = (remainingKg / dailyRate) > 0
 
             if (isMovingTowardsGoal) {
                 val daysToTarget = (remainingKg / dailyRate).toLong()

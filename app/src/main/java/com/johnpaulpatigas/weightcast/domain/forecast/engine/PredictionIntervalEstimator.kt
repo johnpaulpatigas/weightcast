@@ -9,10 +9,20 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.random.Random
 
+enum class BootstrapMethod {
+    INDEPENDENT_RESIDUAL,
+    MOVING_BLOCK_RESIDUAL
+}
+
 object PredictionIntervalEstimator {
 
+    /** Default block size for moving-block residual bootstrap (3 days). */
+    private const val DEFAULT_BLOCK_SIZE = 3
+
     /**
-     * Estimates non-parametric prediction intervals for a forecast horizon using a residual bootstrap with refitting.
+     * Estimates non-parametric prediction intervals for a forecast horizon using residual bootstrap with refitting.
+     *
+     * Supports both Independent Residual Bootstrap and Moving-Block Residual Bootstrap (for autocorrelated residuals).
      *
      * @param preparedMeasurements Prepared daily measurement representatives sorted by timestamp.
      * @param estimate Historical fitted trend estimate.
@@ -20,6 +30,8 @@ object PredictionIntervalEstimator {
      * @param horizonDays Forecast horizon in days (e.g. 7.0, 30.0, 90.0).
      * @param confidenceLevel Target confidence level (default 0.95 for 95% interval).
      * @param bootstrapIterations Number of bootstrap iterations (default 500).
+     * @param bootstrapMethod Bootstrap resampling methodology (defaults to [BootstrapMethod.MOVING_BLOCK_RESIDUAL]).
+     * @param blockSize Block length in days for moving-block bootstrap (default 3).
      * @param randomSeed Optional random seed for deterministic test executions.
      * @return Validated [PredictionInterval] or null if computation fails or interval is non-finite.
      */
@@ -30,6 +42,8 @@ object PredictionIntervalEstimator {
         horizonDays: Double,
         confidenceLevel: Double = 0.95,
         bootstrapIterations: Int = 500,
+        bootstrapMethod: BootstrapMethod = BootstrapMethod.MOVING_BLOCK_RESIDUAL,
+        blockSize: Int = DEFAULT_BLOCK_SIZE,
         randomSeed: Long? = null
     ): PredictionInterval? {
         if (preparedMeasurements.size < 2 || bootstrapIterations < 10) return null
@@ -66,14 +80,31 @@ object PredictionIntervalEstimator {
         val syntheticWeights = DoubleArray(n)
         val predictions = DoubleArray(bootstrapIterations)
 
+        val L = max(1, min(blockSize, n))
+
         // 2. Residual Bootstrap with Model Refitting
         for (b in 0 until bootstrapIterations) {
-            // Construct synthetic observation w_i* = (beta0 + beta1 * t_i) + e_i*
-            for (i in 0 until n) {
-                val resIdx = random.nextInt(n)
-                val eStar = centeredResiduals[resIdx]
-                val fitted = estimate.interceptKg + (estimate.slopeKgPerDay * sorted[i].elapsedDays)
-                syntheticWeights[i] = fitted + eStar
+            if (bootstrapMethod == BootstrapMethod.MOVING_BLOCK_RESIDUAL && L > 1) {
+                // Moving-Block Resampling
+                var filled = 0
+                while (filled < n) {
+                    val startIdx = random.nextInt(n)
+                    for (offset in 0 until L) {
+                        if (filled < n) {
+                            val idx = (startIdx + offset) % n
+                            syntheticWeights[filled] = (estimate.interceptKg + (estimate.slopeKgPerDay * sorted[filled].elapsedDays)) + centeredResiduals[idx]
+                            filled++
+                        }
+                    }
+                }
+            } else {
+                // Independent Resampling
+                for (i in 0 until n) {
+                    val resIdx = random.nextInt(n)
+                    val eStar = centeredResiduals[resIdx]
+                    val fitted = estimate.interceptKg + (estimate.slopeKgPerDay * sorted[i].elapsedDays)
+                    syntheticWeights[i] = fitted + eStar
+                }
             }
 
             // Refit slope beta1* using pairwise slopes of synthetic dataset

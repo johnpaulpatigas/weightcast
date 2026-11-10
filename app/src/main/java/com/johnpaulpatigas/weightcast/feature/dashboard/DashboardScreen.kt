@@ -21,6 +21,7 @@ import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.MonitorWeight
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -37,6 +38,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -52,6 +56,7 @@ import com.johnpaulpatigas.weightcast.core.util.WeightConverter
 import com.johnpaulpatigas.weightcast.core.util.formatKg
 import com.johnpaulpatigas.weightcast.domain.model.ChartPoint
 import com.johnpaulpatigas.weightcast.domain.model.DashboardSummary
+import com.johnpaulpatigas.weightcast.domain.model.WeightEntry
 import com.johnpaulpatigas.weightcast.domain.trend.model.DataSufficiency
 import com.johnpaulpatigas.weightcast.domain.trend.model.TrendStability
 import com.johnpaulpatigas.weightcast.feature.weight_logging.WeightEntryItem
@@ -64,10 +69,13 @@ import kotlin.math.max
 fun DashboardScreen(
     viewModel: DashboardViewModel,
     onQuickAddClick: () -> Unit,
+    onEditEntryClick: (WeightEntry) -> Unit,
+    onDeleteEntryClick: (WeightEntry) -> Unit,
     onNavigateToAnalytics: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var entryToDelete by remember { mutableStateOf<WeightEntry?>(null) }
 
     Scaffold(
         topBar = {
@@ -186,12 +194,40 @@ fun DashboardScreen(
                     WeightEntryItem(
                         entry = entry,
                         previousEntryWeightInKg = prevWeight,
-                        onEditClick = {},
-                        onDeleteClick = {}
+                        onEditClick = { onEditEntryClick(entry) },
+                        onDeleteClick = { entryToDelete = entry }
                     )
                 }
             }
         }
+    }
+
+    // Confirm Delete Dialog
+    entryToDelete?.let { entry ->
+        AlertDialog(
+            onDismissRequest = { entryToDelete = null },
+            title = { Text("Delete Weight Entry") },
+            text = {
+                Text(
+                    "Are you sure you want to delete the entry recorded on ${DateTimeUtils.formatDateTime(entry.timestamp)}?"
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onDeleteEntryClick(entry)
+                        entryToDelete = null
+                    }
+                ) {
+                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { entryToDelete = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 }
 

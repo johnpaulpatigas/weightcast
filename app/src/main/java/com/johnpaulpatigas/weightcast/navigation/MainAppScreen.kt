@@ -98,6 +98,8 @@ fun MainAppScreen(
                         DashboardScreen(
                             viewModel = dashboardViewModel,
                             onQuickAddClick = { loggingViewModel.onOpenAddForm() },
+                            onEditEntryClick = { entry -> loggingViewModel.onOpenEditForm(entry) },
+                            onDeleteEntryClick = { entry -> loggingViewModel.onDeleteEntry(entry.id) },
                             onNavigateToAnalytics = { navigateToAnalytics() }
                         )
                     }
@@ -149,6 +151,8 @@ fun MainAppScreen(
                     DashboardScreen(
                         viewModel = dashboardViewModel,
                         onQuickAddClick = { loggingViewModel.onOpenAddForm() },
+                        onEditEntryClick = { entry -> loggingViewModel.onOpenEditForm(entry) },
+                        onDeleteEntryClick = { entry -> loggingViewModel.onDeleteEntry(entry.id) },
                         onNavigateToAnalytics = { navigateToAnalytics() }
                     )
                 }

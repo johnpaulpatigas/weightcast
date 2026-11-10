@@ -1,16 +1,22 @@
 package com.johnpaulpatigas.weightcast.domain.usecase
 
 import com.johnpaulpatigas.weightcast.core.util.TrendCalculator
+import com.johnpaulpatigas.weightcast.di.DefaultDispatcher
 import com.johnpaulpatigas.weightcast.domain.model.ChartPoint
 import com.johnpaulpatigas.weightcast.domain.model.TimeRange
 import com.johnpaulpatigas.weightcast.domain.repository.WeightRepository
+import com.johnpaulpatigas.weightcast.domain.trend.engine.IncrementalTheilSenEvaluator
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
 class GetHistoricalChartDataUseCase @Inject constructor(
     private val weightRepository: WeightRepository,
-    private val getStatisticalTrendUseCase: GetStatisticalTrendUseCase
+    private val getStatisticalTrendUseCase: GetStatisticalTrendUseCase,
+    @param:DefaultDispatcher private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) {
     operator fun invoke(timeRange: TimeRange): Flow<List<ChartPoint>> {
         return weightRepository.getAllEntries().map { allEntries ->
@@ -25,18 +31,10 @@ class GetHistoricalChartDataUseCase @Inject constructor(
                 nowMillis = latestTimestamp
             )
 
-            filteredEntries.map { entry ->
-                val trendResult = getStatisticalTrendUseCase(
-                    rawEntries = sortedAsc.filter { it.timestamp <= entry.timestamp },
-                    evaluationTimestamp = entry.timestamp
-                )
-
-                ChartPoint(
-                    timestamp = entry.timestamp,
-                    actualWeightInKg = entry.weightInKg,
-                    smoothedTrendInKg = trendResult.estimate?.currentTrendKg
-                )
-            }
-        }
+            IncrementalTheilSenEvaluator.evaluateHistoricalChartPoints(
+                allEntries = sortedAsc,
+                targetEntries = filteredEntries
+            )
+        }.flowOn(defaultDispatcher)
     }
 }

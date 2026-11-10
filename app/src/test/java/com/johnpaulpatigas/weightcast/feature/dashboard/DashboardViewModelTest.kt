@@ -7,7 +7,6 @@ import com.johnpaulpatigas.weightcast.domain.usecase.FakeGoalRepository
 import com.johnpaulpatigas.weightcast.domain.usecase.FakeWeightRepository
 import com.johnpaulpatigas.weightcast.domain.usecase.GetDashboardSummaryUseCase
 import com.johnpaulpatigas.weightcast.domain.usecase.GetHistoricalChartDataUseCase
-import com.johnpaulpatigas.weightcast.feature.weight_logging.FakeUserPreferencesRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -26,7 +25,6 @@ class DashboardViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var weightRepository: FakeWeightRepository
     private lateinit var goalRepository: FakeGoalRepository
-    private lateinit var userPreferencesRepository: FakeUserPreferencesRepository
     private lateinit var viewModel: DashboardViewModel
 
     @Before
@@ -34,7 +32,6 @@ class DashboardViewModelTest {
         Dispatchers.setMain(testDispatcher)
         weightRepository = FakeWeightRepository()
         goalRepository = FakeGoalRepository()
-        userPreferencesRepository = FakeUserPreferencesRepository()
 
         val getTrendUseCase = com.johnpaulpatigas.weightcast.domain.usecase.GetStatisticalTrendUseCase(weightRepository)
         val getSummaryUseCase = GetDashboardSummaryUseCase(weightRepository, goalRepository, getTrendUseCase)
@@ -42,8 +39,7 @@ class DashboardViewModelTest {
 
         viewModel = DashboardViewModel(
             getDashboardSummaryUseCase = getSummaryUseCase,
-            getHistoricalChartDataUseCase = getChartDataUseCase,
-            userPreferencesRepository = userPreferencesRepository
+            getHistoricalChartDataUseCase = getChartDataUseCase
         )
     }
 
@@ -53,11 +49,10 @@ class DashboardViewModelTest {
     }
 
     @Test
-    fun `initial ui state loads summary and user preferred unit`() = runTest {
+    fun `initial ui state loads summary and default time range`() = runTest {
         testDispatcher.scheduler.advanceUntilIdle()
         val state = viewModel.uiState.value
         assertFalse(state.isLoading)
-        assertEquals(WeightUnit.KG, state.displayUnit)
         assertEquals(TimeRange.DAYS_30, state.selectedTimeRange)
     }
 

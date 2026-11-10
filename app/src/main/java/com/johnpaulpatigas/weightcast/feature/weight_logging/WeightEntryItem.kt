@@ -42,16 +42,15 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.johnpaulpatigas.weightcast.core.model.WeightUnit
 import com.johnpaulpatigas.weightcast.core.util.DateTimeUtils
 import com.johnpaulpatigas.weightcast.core.util.WeightConverter
+import com.johnpaulpatigas.weightcast.core.util.formatKg
 import com.johnpaulpatigas.weightcast.domain.model.WeightEntry
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WeightEntryItem(
     entry: WeightEntry,
-    displayUnit: WeightUnit,
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -109,7 +108,7 @@ fun WeightEntryItem(
                 Column(modifier = Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = WeightConverter.formatDisplay(entry.weightInKg, displayUnit),
+                            text = entry.weightInKg.formatKg(),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
@@ -118,7 +117,7 @@ fun WeightEntryItem(
                         if (previousEntryWeightInKg != null) {
                             Spacer(modifier = Modifier.width(10.dp))
                             val delta = entry.weightInKg - previousEntryWeightInKg
-                            MetricDeltaBadge(deltaKg = delta, displayUnit = displayUnit)
+                            MetricDeltaBadge(deltaKg = delta)
                         }
                     }
 
@@ -179,7 +178,6 @@ fun WeightEntryItem(
 @Composable
 fun MetricDeltaBadge(
     deltaKg: Double,
-    displayUnit: WeightUnit,
     modifier: Modifier = Modifier
 ) {
     val roundedDelta = WeightConverter.roundTo(deltaKg, 1)
@@ -204,7 +202,7 @@ fun MetricDeltaBadge(
         )
     }
 
-    val deltaText = "${if (isGain) "+" else ""}$roundedDelta ${displayUnit.symbol}"
+    val deltaText = "${if (isGain) "+" else ""}$roundedDelta kg"
 
     Surface(
         shape = MaterialTheme.shapes.extraSmall,

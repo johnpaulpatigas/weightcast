@@ -1,6 +1,5 @@
 package com.johnpaulpatigas.weightcast.feature.weight_logging
 
-import com.johnpaulpatigas.weightcast.core.model.WeightUnit
 import com.johnpaulpatigas.weightcast.domain.model.WeightEntry
 
 data class WeightLoggingUiState(
@@ -9,7 +8,6 @@ data class WeightLoggingUiState(
     val isEditing: Boolean = false,
     val editingEntryId: Long? = null,
     val weightInput: String = "",
-    val selectedUnit: WeightUnit = WeightUnit.KG,
     val timestamp: Long = System.currentTimeMillis(),
     val notesInput: String = "",
     val validationError: String? = null,

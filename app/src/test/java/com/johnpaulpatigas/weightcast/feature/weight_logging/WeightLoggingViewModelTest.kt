@@ -38,14 +38,12 @@ class WeightLoggingViewModelTest {
 
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var repository: FakeWeightRepository
-    private lateinit var userPreferencesRepository: FakeUserPreferencesRepository
     private lateinit var viewModel: WeightLoggingViewModel
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
         repository = FakeWeightRepository()
-        userPreferencesRepository = FakeUserPreferencesRepository()
 
         val validateUseCase = ValidateWeightEntryUseCase(repository)
         val addUseCase = AddWeightEntryUseCase(repository, validateUseCase)
@@ -57,8 +55,7 @@ class WeightLoggingViewModelTest {
             getWeightEntriesUseCase = getUseCase,
             addWeightEntryUseCase = addUseCase,
             updateWeightEntryUseCase = updateUseCase,
-            deleteWeightEntryUseCase = deleteUseCase,
-            userPreferencesRepository = userPreferencesRepository
+            deleteWeightEntryUseCase = deleteUseCase
         )
     }
 
@@ -101,7 +98,6 @@ class WeightLoggingViewModelTest {
     fun `onSaveEntry with valid input saves entry`() = runTest {
         viewModel.onOpenAddForm()
         viewModel.onWeightInputChanged("72.5")
-        viewModel.onUnitSelected(WeightUnit.KG)
         viewModel.onSaveEntry()
         testDispatcher.scheduler.advanceUntilIdle()
 

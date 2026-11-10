@@ -1,7 +1,5 @@
 package com.johnpaulpatigas.weightcast.feature.weight_logging
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,7 +18,6 @@ import androidx.compose.material.icons.automirrored.filled.Backspace
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -49,7 +46,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.contentDescription
@@ -60,6 +56,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.johnpaulpatigas.weightcast.core.util.DateTimeUtils
 import com.johnpaulpatigas.weightcast.core.util.WeightConverter
+import com.johnpaulpatigas.weightcast.core.util.formatKg
 import com.johnpaulpatigas.weightcast.ui.motion.AnimatedMetricContent
 import java.time.Instant
 import java.time.LocalDateTime
@@ -433,7 +430,7 @@ fun LogWeightBottomSheet(
             title = { Text("Duplicate Entry Time") },
             text = {
                 Text(
-                    "A weight measurement of ${WeightConverter.formatDisplay(uiState.duplicateWarningEntry.weightInKg, uiState.selectedUnit)} " +
+                    "A weight measurement of ${uiState.duplicateWarningEntry.weightInKg.formatKg()} " +
                             "was already recorded for ${DateTimeUtils.formatDateTime(uiState.duplicateWarningEntry.timestamp)}. " +
                             "Save this entry anyway?"
                 )

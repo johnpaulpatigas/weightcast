@@ -3,7 +3,6 @@ package com.johnpaulpatigas.weightcast.feature.weight_logging
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.johnpaulpatigas.weightcast.core.model.WeightUnit
-import com.johnpaulpatigas.weightcast.core.preferences.UserPreferencesRepository
 import com.johnpaulpatigas.weightcast.core.util.WeightConverter
 import com.johnpaulpatigas.weightcast.domain.model.WeightEntry
 import com.johnpaulpatigas.weightcast.domain.usecase.AddWeightEntryUseCase
@@ -24,26 +23,14 @@ class WeightLoggingViewModel @Inject constructor(
     private val getWeightEntriesUseCase: GetWeightEntriesUseCase,
     private val addWeightEntryUseCase: AddWeightEntryUseCase,
     private val updateWeightEntryUseCase: UpdateWeightEntryUseCase,
-    private val deleteWeightEntryUseCase: DeleteWeightEntryUseCase,
-    private val userPreferencesRepository: UserPreferencesRepository
+    private val deleteWeightEntryUseCase: DeleteWeightEntryUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(WeightLoggingUiState())
     val uiState: StateFlow<WeightLoggingUiState> = _uiState.asStateFlow()
 
     init {
-        loadUserPreferredUnit()
         observeWeightEntries()
-    }
-
-    private fun loadUserPreferredUnit() {
-        viewModelScope.launch {
-            userPreferencesRepository.preferredUnit.collect { unit ->
-                _uiState.update { currentState ->
-                    currentState.copy(selectedUnit = unit)
-                }
-            }
-        }
     }
 
     private fun observeWeightEntries() {
@@ -71,10 +58,7 @@ class WeightLoggingViewModel @Inject constructor(
     }
 
     fun onOpenEditForm(entry: WeightEntry) {
-        val displayWeight = WeightConverter.roundTo(
-            WeightConverter.fromCanonicalKg(entry.weightInKg, entry.originalUnit),
-            1
-        ).toString()
+        val displayWeight = WeightConverter.roundTo(entry.weightInKg, 1).toString()
 
         _uiState.update {
             it.copy(
@@ -82,7 +66,6 @@ class WeightLoggingViewModel @Inject constructor(
                 isEditing = true,
                 editingEntryId = entry.id,
                 weightInput = displayWeight,
-                selectedUnit = entry.originalUnit,
                 timestamp = entry.timestamp,
                 notesInput = entry.notes ?: "",
                 validationError = null,
@@ -104,13 +87,6 @@ class WeightLoggingViewModel @Inject constructor(
 
     fun onWeightInputChanged(input: String) {
         _uiState.update { it.copy(weightInput = input, validationError = null) }
-    }
-
-    fun onUnitSelected(unit: WeightUnit) {
-        _uiState.update { it.copy(selectedUnit = unit) }
-        viewModelScope.launch {
-            userPreferencesRepository.setPreferredUnit(unit)
-        }
     }
 
     fun onTimestampSelected(timestamp: Long) {
@@ -137,7 +113,7 @@ class WeightLoggingViewModel @Inject constructor(
                 updateWeightEntryUseCase(
                     id = state.editingEntryId,
                     weightValue = weightVal,
-                    unit = state.selectedUnit,
+                    unit = WeightUnit.KG,
                     timestamp = state.timestamp,
                     notes = state.notesInput,
                     allowDuplicate = allowDuplicate
@@ -145,7 +121,7 @@ class WeightLoggingViewModel @Inject constructor(
             } else {
                 addWeightEntryUseCase(
                     weightValue = weightVal,
-                    unit = state.selectedUnit,
+                    unit = WeightUnit.KG,
                     timestamp = state.timestamp,
                     notes = state.notesInput,
                     allowDuplicate = allowDuplicate

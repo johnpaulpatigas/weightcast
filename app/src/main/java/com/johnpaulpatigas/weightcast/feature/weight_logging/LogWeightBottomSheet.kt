@@ -128,7 +128,7 @@ fun LogWeightBottomSheet(
                         .padding(vertical = 20.dp, horizontal = 16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    val displayStr = if (uiState.weightInput.isBlank()) "0.0" else uiState.weightInput
+                    val displayStr = if (uiState.weightInput.isBlank()) "0.00" else uiState.weightInput
 
                     Row(
                         verticalAlignment = Alignment.Bottom,
@@ -191,7 +191,7 @@ fun LogWeightBottomSheet(
                         onClick = {
                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                             val newKg = max(0.0, currentKg + delta)
-                            val formatted = WeightConverter.roundTo(newKg, 1).toString()
+                            val formatted = WeightConverter.roundTo(newKg, 2).toString()
                             onWeightInputChanged(formatted)
                         },
                         shape = MaterialTheme.shapes.medium,
@@ -225,10 +225,10 @@ fun LogWeightBottomSheet(
                     } else if (current.contains(".") && digit == ".") {
                         // ignore duplicate decimal
                     } else {
-                        // Limit to 1 decimal place max
+                        // Limit to 2 decimal places max
                         val parts = current.split(".")
-                        if (parts.size == 2 && parts[1].length >= 1 && digit != ".") {
-                            // Already has 1 decimal digit
+                        if (parts.size == 2 && parts[1].length >= 2 && digit != ".") {
+                            // Already has 2 decimal digits
                         } else {
                             onWeightInputChanged(current + digit)
                         }

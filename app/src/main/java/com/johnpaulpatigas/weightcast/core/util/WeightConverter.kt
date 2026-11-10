@@ -33,7 +33,7 @@ object WeightConverter {
     /**
      * Rounds a double value to specified decimal places.
      */
-    fun roundTo(value: Double, decimalPlaces: Int = 1): Double {
+    fun roundTo(value: Double, decimalPlaces: Int = 2): Double {
         require(decimalPlaces >= 0) { "Decimal places must be non-negative" }
         val factor = 10.0.pow(decimalPlaces)
         return (value * factor).roundToInt() / factor
@@ -45,7 +45,7 @@ object WeightConverter {
     fun formatDisplay(
         canonicalKgValue: Double,
         targetUnit: WeightUnit = WeightUnit.KG,
-        decimalPlaces: Int = 1
+        decimalPlaces: Int = 2
     ): String {
         return canonicalKgValue.formatKg(decimalPlaces)
     }
@@ -54,4 +54,4 @@ object WeightConverter {
 /**
  * Top-level Kotlin extension for formatting Double weight in kilograms (kg).
  */
-fun Double.formatKg(decimals: Int = 1): String = "%.${decimals}f kg".format(this)
+fun Double.formatKg(decimals: Int = 2): String = "%.${decimals}f kg".format(this)

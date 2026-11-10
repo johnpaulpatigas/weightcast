@@ -19,7 +19,7 @@ data class WeightEntry(
         return WeightConverter.fromCanonicalKg(weightInKg, targetUnit)
     }
 
-    fun getFormattedWeight(targetUnit: WeightUnit, decimalPlaces: Int = 1): String {
+    fun getFormattedWeight(targetUnit: WeightUnit, decimalPlaces: Int = 2): String {
         return WeightConverter.formatDisplay(weightInKg, targetUnit, decimalPlaces)
     }
 }

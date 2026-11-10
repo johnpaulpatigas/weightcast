@@ -276,7 +276,7 @@ fun HeroWeightCard(
                     summary.weeklyChangeKg?.let { weeklyChange ->
                         Spacer(modifier = Modifier.width(10.dp))
 
-                        val roundedChange = WeightConverter.roundTo(weeklyChange, 1)
+                        val roundedChange = WeightConverter.roundTo(weeklyChange, 2)
                         val isLoss = roundedChange < 0
                         val directionWord = if (isLoss) "decreasing" else if (roundedChange > 0) "increasing" else "unchanged"
                         val changeText = "$directionWord (${if (roundedChange > 0) "+" else ""}$roundedChange kg/wk)"

@@ -24,8 +24,8 @@ class WeightConverterTest {
     @Test
     fun `formatDisplay formats canonical KG correctly`() {
         val canonicalKg = 70.0
-        val formattedKg = WeightConverter.formatDisplay(canonicalKg, WeightUnit.KG, 1)
+        val formattedKg = WeightConverter.formatDisplay(canonicalKg, WeightUnit.KG)
 
-        assertEquals("70.0 kg", formattedKg)
+        assertEquals("70.00 kg", formattedKg)
     }
 }

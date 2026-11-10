@@ -180,7 +180,7 @@ fun MetricDeltaBadge(
     deltaKg: Double,
     modifier: Modifier = Modifier
 ) {
-    val roundedDelta = WeightConverter.roundTo(deltaKg, 1)
+    val roundedDelta = WeightConverter.roundTo(deltaKg, 2)
     val isLoss = roundedDelta < 0
     val isGain = roundedDelta > 0
 

@@ -41,7 +41,7 @@ class WeightLoggingViewModel @Inject constructor(
                     if (currentState.isFormOpen && !currentState.isEditing && currentState.weightInput.isEmpty()) {
                         val pastWeight = entriesList.firstOrNull()?.weightInKg
                         if (pastWeight != null) {
-                            val formatted = WeightConverter.roundTo(pastWeight, 1).toString()
+                            val formatted = WeightConverter.roundTo(pastWeight, 2).toString()
                             updatedState.copy(weightInput = formatted)
                         } else {
                             updatedState
@@ -56,7 +56,7 @@ class WeightLoggingViewModel @Inject constructor(
 
     fun onOpenAddForm() {
         val lastWeight = _uiState.value.entries.firstOrNull()?.weightInKg
-        val initialWeightInput = lastWeight?.let { WeightConverter.roundTo(it, 1).toString() } ?: ""
+        val initialWeightInput = lastWeight?.let { WeightConverter.roundTo(it, 2).toString() } ?: ""
 
         _uiState.update {
             it.copy(
@@ -74,7 +74,7 @@ class WeightLoggingViewModel @Inject constructor(
     }
 
     fun onOpenEditForm(entry: WeightEntry) {
-        val displayWeight = WeightConverter.roundTo(entry.weightInKg, 1).toString()
+        val displayWeight = WeightConverter.roundTo(entry.weightInKg, 2).toString()
 
         _uiState.update {
             it.copy(

@@ -260,7 +260,7 @@ private fun InteractiveChartCanvas(
         for (i in 0 until gridLineCount) {
             val ratio = i / (gridLineCount - 1).toFloat()
             val yPos = chartHeight - (ratio * chartHeight)
-            val gridVal = WeightConverter.roundTo(yMin + (ratio * yRange), 1)
+            val gridVal = WeightConverter.roundTo(yMin + (ratio * yRange), 2)
 
             drawLine(
                 color = gridColor,

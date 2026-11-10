@@ -3,6 +3,7 @@ package com.johnpaulpatigas.weightcast.navigation
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -26,17 +27,20 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.johnpaulpatigas.weightcast.feature.dashboard.DashboardScreen
 import com.johnpaulpatigas.weightcast.feature.dashboard.DashboardViewModel
+import com.johnpaulpatigas.weightcast.feature.goals_settings.GoalsSettingsScreen
+import com.johnpaulpatigas.weightcast.feature.goals_settings.GoalsSettingsViewModel
 import com.johnpaulpatigas.weightcast.feature.weight_history.WeightHistoryScreen
 import com.johnpaulpatigas.weightcast.feature.weight_history.WeightHistoryViewModel
-import com.johnpaulpatigas.weightcast.feature.weight_logging.WeightLoggingDialog
-import com.johnpaulpatigas.weightcast.feature.weight_logging.WeightLoggingScreen
+import com.johnpaulpatigas.weightcast.feature.weight_logging.LogWeightBottomSheet
 import com.johnpaulpatigas.weightcast.feature.weight_logging.WeightLoggingViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainAppScreen(
     loggingViewModel: WeightLoggingViewModel = hiltViewModel(),
     dashboardViewModel: DashboardViewModel = hiltViewModel(),
-    historyViewModel: WeightHistoryViewModel = hiltViewModel()
+    historyViewModel: WeightHistoryViewModel = hiltViewModel(),
+    goalsSettingsViewModel: GoalsSettingsViewModel = hiltViewModel()
 ) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -85,14 +89,14 @@ fun MainAppScreen(
                             onQuickAddClick = { loggingViewModel.onOpenAddForm() }
                         )
                     }
-                    composable(Screen.History.route) {
+                    composable(Screen.Analytics.route) {
                         WeightHistoryScreen(
                             viewModel = historyViewModel,
                             onEditEntryClick = { entry -> loggingViewModel.onOpenEditForm(entry) }
                         )
                     }
-                    composable(Screen.Logs.route) {
-                        WeightLoggingScreen(viewModel = loggingViewModel)
+                    composable(Screen.Goals.route) {
+                        GoalsSettingsScreen(viewModel = goalsSettingsViewModel)
                     }
                 }
             }
@@ -134,24 +138,23 @@ fun MainAppScreen(
                         onQuickAddClick = { loggingViewModel.onOpenAddForm() }
                     )
                 }
-                composable(Screen.History.route) {
+                composable(Screen.Analytics.route) {
                     WeightHistoryScreen(
                         viewModel = historyViewModel,
                         onEditEntryClick = { entry -> loggingViewModel.onOpenEditForm(entry) }
                     )
                 }
-                composable(Screen.Logs.route) {
-                    WeightLoggingScreen(viewModel = loggingViewModel)
+                composable(Screen.Goals.route) {
+                    GoalsSettingsScreen(viewModel = goalsSettingsViewModel)
                 }
             }
         }
     }
 
     if (loggingUiState.isFormOpen) {
-        WeightLoggingDialog(
+        LogWeightBottomSheet(
             uiState = loggingUiState,
             onWeightInputChanged = { loggingViewModel.onWeightInputChanged(it) },
-            onUnitSelected = { loggingViewModel.onUnitSelected(it) },
             onTimestampSelected = { loggingViewModel.onTimestampSelected(it) },
             onNotesInputChanged = { loggingViewModel.onNotesInputChanged(it) },
             onSaveEntry = { allowDup -> loggingViewModel.onSaveEntry(allowDup) },

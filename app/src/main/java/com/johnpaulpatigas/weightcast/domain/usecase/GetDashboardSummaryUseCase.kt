@@ -6,7 +6,6 @@ import com.johnpaulpatigas.weightcast.domain.model.WeightEntry
 import com.johnpaulpatigas.weightcast.domain.model.WeightGoal
 import com.johnpaulpatigas.weightcast.domain.repository.GoalRepository
 import com.johnpaulpatigas.weightcast.domain.repository.WeightRepository
-import com.johnpaulpatigas.weightcast.domain.trend.engine.StatisticalTrendEvaluator
 import com.johnpaulpatigas.weightcast.domain.trend.model.DataSufficiency
 import com.johnpaulpatigas.weightcast.domain.trend.model.TrendStability
 import kotlinx.coroutines.flow.Flow
@@ -15,7 +14,8 @@ import javax.inject.Inject
 
 class GetDashboardSummaryUseCase @Inject constructor(
     private val weightRepository: WeightRepository,
-    private val goalRepository: GoalRepository
+    private val goalRepository: GoalRepository,
+    private val getStatisticalTrendUseCase: GetStatisticalTrendUseCase
 ) {
     operator fun invoke(): Flow<DashboardSummary> {
         return combine(
@@ -31,7 +31,7 @@ class GetDashboardSummaryUseCase @Inject constructor(
             val currentKg = latestEntry.weightInKg
             val latestTimestamp = latestEntry.timestamp
 
-            val trendResult = StatisticalTrendEvaluator.evaluateTrend(
+            val trendResult = getStatisticalTrendUseCase(
                 rawEntries = sortedAsc,
                 evaluationTimestamp = latestTimestamp
             )

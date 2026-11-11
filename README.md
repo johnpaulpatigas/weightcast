@@ -3,6 +3,7 @@
 WeightCast is an offline-first, privacy-focused body weight tracking and statistical forecasting application for Android built with modern Android development standards and **Material 3 Expressive design principles**.
 
 ## Core Features
+
 - **Offline-First Storage**: Native Room SQLite database persisting all measurements securely on device.
 - **Kilogram Standardization**: All measurements, calculations, and displays operate strictly in Kilograms (KG).
 - **Authoritative Statistical Engine**: Employs non-parametric **Theil-Sen Robust Linear Regression** with high-performance **Exact Incremental $O(N^2 \log N)$ Evaluation** for historical trend series generation (without 7-day moving average fallback as authoritative trend).
@@ -13,6 +14,7 @@ WeightCast is an offline-first, privacy-focused body weight tracking and statist
 - **Adaptive Navigation**: Seamless transition between Compact Bottom Navigation Bar and Tablet Navigation Rail.
 
 ## Tech Stack
+
 - **Language**: Kotlin 2.1
 - **UI Framework**: Jetpack Compose & Material 3 Expressive
 - **Architecture**: Clean Architecture + MVVM

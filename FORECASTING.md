@@ -5,6 +5,7 @@
 WeightCast provides an offline-first forecasting engine for projected weight trajectory estimation, uncertainty quantification, target date estimation, and rolling backtesting validation.
 
 ### Core Principles
+
 1. **No Competing Trend Models**: Forecasting uses the authoritative historical Theil-Sen robust linear regression fitted by the existing statistical trend engine as its foundation.
 2. **Explicit Uncertainty Intervals**: Prediction intervals represent empirical prediction uncertainty (slope uncertainty, intercept uncertainty, and residual variation via bootstrap refitting), rather than arbitrary multipliers of standard deviation ($1.96 \times s_e$).
 3. **Strict Forecast Eligibility**: Forecasts are strictly suppressed under insufficient data volume, low data confidence, or unstable historical trends (such as direction reversals or excessive residual scatter).
@@ -15,7 +16,9 @@ WeightCast provides an offline-first forecasting engine for projected weight tra
 ## 2. Forecast Model & Coordinate System
 
 ### Mathematical Model
+
 For a fitted Theil-Sen regression model with parameters:
+
 - Baseline timestamp $t_0$ (timestamp of the earliest daily representative in the preparation window).
 - Elapsed time in fractional days: $t_i = \frac{\text{timestamp}_i - t_0}{86,400,000.0}$.
 - Estimated slope $\hat{\beta}_1$ (median pairwise slope in KG/day).
@@ -28,6 +31,7 @@ $$t_{\text{target,days}} = t_{\text{eval,days}} + h = \frac{t_{\text{eval}} - t_
 $$\hat{W}(t_{\text{eval}} + h) = \hat{\beta}_0 + \hat{\beta}_1 \cdot t_{\text{target,days}}$$
 
 ### Physical & Validity Constraints
+
 - **Negative & Non-Finite Weight Rejection**: If $\hat{W}(t_{\text{eval}} + h) < 0.0$, NaN, or infinite, the forecast is rejected and marked unavailable. No silent clamping to 0.0 is performed.
 - **Precision**: Double-precision floating-point arithmetic is maintained across all coordinate transformations and statistical operations.
 
@@ -36,16 +40,20 @@ $$\hat{W}(t_{\text{eval}} + h) = \hat{\beta}_0 + \hat{\beta}_1 \cdot t_{\text{ta
 ## 3. Prediction Interval Methodology
 
 ### Why Not $1.96 \times s_e$?
+
 A standard linear regression prediction interval formula like $\hat{W} \pm 1.96 \cdot s_e$ assumes:
+
 - Normally distributed, independent, identically distributed (i.i.d.) error terms.
 - Ordinary Least Squares (OLS) regression estimators.
 - Constant variance (homoscedasticity) without slope estimation uncertainty.
 
 For Theil-Sen robust regression on human body weight logs, these assumptions fail because:
+
 1. Weight logs exhibit heavy-tailed noise, measurement anomalies, and irregular timing.
 2. Slope $\hat{\beta}_1$ is estimated with uncertainty; extrapolating over a horizon $h$ multiplies this slope uncertainty by $h$. Thus, valid prediction intervals **must widen** with longer forecast horizons.
 
 ### Selected Approach: Residual Bootstrap with Model Refitting
+
 We implement a non-parametric **Residual Bootstrap with Refitting**:
 
 1. **Mean-Centered Residuals**: Compute historical residuals $e_i = w_i - (\hat{\beta}_0 + \hat{\beta}_1 t_i)$ for prepared daily measurements $i=1 \dots N$. Centered residuals are: $e_i^c = e_i - \bar{e}$.
@@ -62,6 +70,7 @@ We implement a non-parametric **Residual Bootstrap with Refitting**:
 4. **Interval Validation**: Reject intervals where $L(h) > \hat{W}$ or $\hat{W} > U(h)$ or $L(h) < 0.0$.
 
 ### Random Seed Strategy
+
 - **Testing**: Deterministic random seeds (`Random(42L)`) ensure 100% reproducible test assertions.
 - **Production**: Configurable seed strategy using System/Default entropy for unbiased runtime sampling.
 
@@ -72,7 +81,7 @@ We implement a non-parametric **Residual Bootstrap with Refitting**:
 The engine computes three standardized horizons:
 
 | Horizon Name | Duration ($h$) | Target Timestamp ($t_{\text{eval}} + h \cdot 86.4\times 10^6$) | Primary Use |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `DAYS_7` | 7 days | $t_{\text{eval}} + 7\text{d}$ | Short-term trend projection |
 | `DAYS_30` | 30 days | $t_{\text{eval}} + 30\text{d}$ | Medium-term trend projection |
 | `DAYS_90` | 90 days | $t_{\text{eval}} + 90\text{d}$ | Long-term trend projection |
@@ -84,7 +93,7 @@ The engine computes three standardized horizons:
 Forecast generation is governed by strict statistical eligibility rules based on historical Data Sufficiency and Trend Stability:
 
 | Data Sufficiency | Trend Stability | Horizon `DAYS_7` | Horizon `DAYS_30` | Horizon `DAYS_90` | Status & Reason |
-|---|---|---|---|---|---|
+| --- | --- | --- | --- | --- | --- |
 | `INSUFFICIENT_DATA` | Any | ❌ Unavailable | ❌ Unavailable | ❌ Unavailable | "Insufficient data: at least 3 distinct daily measurements required." |
 | `LOW_CONFIDENCE` | Any | ❌ Unavailable | ❌ Unavailable | ❌ Unavailable | "Low confidence: at least 7 days of logs and 5 measurements required for forecasting." |
 | `MODERATE_CONFIDENCE` | `STABLE` | ✅ Available | ✅ Available | ❌ Unavailable | "Moderate confidence dataset: short/medium-term forecasts available." (90-day requires HIGH) |
@@ -117,7 +126,9 @@ Target weight achievement estimates a user's projected arrival date at a target 
 A rolling forecast origin framework evaluates real empirical performance of the forecasting engine without future-data leakage:
 
 ### Algorithm
+
 For historical daily measurements $P_1, P_2, \dots, P_N$:
+
 1. Step through candidate forecast origins $t_{\text{origin}} = P_k.\text{timestamp}$ for $k = k_{\text{min}} \dots N-1$.
 2. Filter entries available on or before $t_{\text{origin}}$.
 3. Run `ForecastingEngine` at $t_{\text{origin}}$.
@@ -142,7 +153,7 @@ For historical daily measurements $P_1, P_2, \dots, P_N$:
 The backtesting framework was evaluated using synthetic datasets with known statistical parameters:
 
 | Dataset Description | Forecast Horizon | Mean Absolute Error (MAE) | Empirical Coverage (95% CI) | Mean Interval Width |
-|---|---|---|---|---|
+| --- | --- | --- | --- | --- |
 | **Constant Weight** ($75\text{kg}, \sigma=0.2\text{kg}$) | 7 Days | $0.12\text{ kg}$ | $95.8\%$ | $0.85\text{ kg}$ |
 | **Constant Weight** ($75\text{kg}, \sigma=0.2\text{kg}$) | 30 Days | $0.21\text{ kg}$ | $94.2\%$ | $1.42\text{ kg}$ |
 | **Consistent Loss** ($-0.07\text{kg/day}, \sigma=0.2\text{kg}$) | 7 Days | $0.18\text{ kg}$ | $96.2\%$ | $0.98\text{ kg}$ |
@@ -151,8 +162,8 @@ The backtesting framework was evaluated using synthetic datasets with known stat
 | **Single Outlier** ($+15\text{kg}$ spike) | 7 Days | $0.24\text{ kg}$ | $95.0\%$ | $1.12\text{ kg}$ |
 
 ### Performance Benchmarks
+
 - **Incremental Historical Trend Generation ($N=500$)**: ~18.5 ms.
 - **Analytical Chart Projections ($N=500$)**: $< 0.1$ ms.
 - **Full Residual Bootstrap ($B=500, N=100$)**: ~12.4 ms on CPU (`Dispatchers.Default`).
 - **All 146 Unit Tests**: 100% Passing.
-

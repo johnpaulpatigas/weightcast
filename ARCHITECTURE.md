@@ -4,7 +4,7 @@ WeightCast follows Clean Architecture and MVVM principles to enforce separation 
 
 ## Layer Structure
 
-```
+```text
 app/src/main/java/com/johnpaulpatigas/weightcast/
 ├── core/                  # Core utilities, unit converters, preferences
 │   ├── model/             # WeightUnit enum (KG)
@@ -35,4 +35,5 @@ app/src/main/java/com/johnpaulpatigas/weightcast/
 ```
 
 ## Data Flow
+
 `UI (Compose Screen)` ➔ `ViewModel (StateFlow)` ➔ `Domain Use Cases (GetDashboardSummary, GetHistoricalChartData)` ➔ `GetStatisticalTrendUseCase` ➔ `StatisticalTrendEvaluator` ➔ `Repository` ➔ `Room DAO`

@@ -65,17 +65,17 @@ Evaluating a single point's Theil-Sen regression requires calculating $\frac{N(N
 Generating a full historical trend line series previously evaluated independent regression models for each timestamp $t_k \le t_N$, yielding an unoptimized baseline complexity of:
 $$\sum_{k=1}^{N} O(k^2 \log k) \approx O(N^3 \log N)$$
 
-### Exact Incremental Theil-Sen Evaluation Optimization (Phase 3.6)
-To eliminate the $O(N^3 \log N)$ bottleneck without compromising mathematical correctness, `IncrementalTheilSenEvaluator` uses a high-performance dual-heap structure (`DoubleMedianTracker`).
+### Exact Incremental Theil-Sen Evaluation Optimization
+To eliminate the $O(N^3 \log N)$ bottleneck without compromising mathematical correctness, `IncrementalTheilSenEvaluator` uses a dual-heap structure (`DoubleMedianTracker`).
 As each daily representative $P_k$ arrives chronologically, its slopes against all preceding $k-1$ representatives are inserted into the dual heap in $O(k \log k)$ time. The median slope is queried in $O(1)$ time, reducing the total historical series generation complexity to:
 $$\sum_{k=1}^{N} O(k \log k) = O(N^2 \log N)$$
 
 ### Observed Benchmark Comparison (Complete Historical Chart Data Generation):
-| Measurements ($N$) | Phase 3.5 Execution Time (Baseline) | Phase 3.6 Execution Time (Optimized) | Performance Gain |
+| Measurements ($N$) | Baseline Execution Time | Optimized Incremental Execution Time | Performance Gain |
 |---:|---:|---:|---:|
 | 30 | 4.499 ms | ~0.3 ms | ~15x faster |
 | 100 | 106.512 ms | ~1.2 ms | ~88x faster |
 | 250 | 618.311 ms | ~4.5 ms | ~137x faster |
 | 500 | 4,978.402 ms | ~18.5 ms | ~269x faster |
 
-*Note: The optimized incremental evaluator preserves 100% mathematical equivalence to running independent baseline Theil-Sen regressions at every historical timestamp.*
+*Note: The incremental evaluator preserves exact mathematical equivalence to running independent baseline Theil-Sen regressions at every historical timestamp.*

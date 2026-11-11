@@ -48,7 +48,7 @@ class HistoricalChartPerformanceBenchmarkTest {
         val medianResults = mutableMapOf<Int, Double>()
 
         println("=========================================================================")
-        println("HISTORICAL CHART PERFORMANCE BENCHMARK (Phase 3.6 Optimized Implementation)")
+        println("HISTORICAL CHART PERFORMANCE BENCHMARK (Incremental Evaluator)")
         println("=========================================================================")
 
         for (n in sizes) {

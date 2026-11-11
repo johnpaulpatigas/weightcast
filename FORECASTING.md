@@ -2,7 +2,7 @@
 
 ## 1. Statistical Design & Overview
 
-WeightCast Phase 4 introduces a non-parametric, offline-first forecasting engine for projected weight trajectory estimation, uncertainty quantification, target date estimation, and rolling backtesting validation.
+WeightCast provides an offline-first forecasting engine for projected weight trajectory estimation, uncertainty quantification, target date estimation, and rolling backtesting validation.
 
 ### Core Principles
 1. **No Competing Trend Models**: Forecasting uses the authoritative historical Theil-Sen robust linear regression fitted by the existing statistical trend engine as its foundation.

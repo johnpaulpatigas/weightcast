@@ -33,7 +33,7 @@ class ProductionStatisticalTrendIntegrationTest {
         getStatisticalTrendUseCase = GetStatisticalTrendUseCase(weightRepository)
         generateWeightForecastUseCase = GenerateWeightForecastUseCase(weightRepository, goalRepository, getStatisticalTrendUseCase)
         getDashboardSummaryUseCase = GetDashboardSummaryUseCase(weightRepository, goalRepository, getStatisticalTrendUseCase, generateWeightForecastUseCase)
-        getHistoricalChartDataUseCase = GetHistoricalChartDataUseCase(weightRepository, getStatisticalTrendUseCase)
+        getHistoricalChartDataUseCase = GetHistoricalChartDataUseCase(weightRepository, generateWeightForecastUseCase)
     }
 
     @Test

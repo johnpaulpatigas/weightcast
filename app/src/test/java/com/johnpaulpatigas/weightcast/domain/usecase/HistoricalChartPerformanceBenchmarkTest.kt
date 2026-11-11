@@ -22,16 +22,20 @@ class HistoricalChartPerformanceBenchmarkTest {
     private val baseTime = 1_000_000_000_000L
 
     private lateinit var weightRepository: FakeWeightRepository
+    private lateinit var goalRepository: FakeGoalRepository
     private lateinit var getStatisticalTrendUseCase: GetStatisticalTrendUseCase
+    private lateinit var generateWeightForecastUseCase: GenerateWeightForecastUseCase
     private lateinit var getHistoricalChartDataUseCase: GetHistoricalChartDataUseCase
 
     @Before
     fun setUp() {
         weightRepository = FakeWeightRepository()
+        goalRepository = FakeGoalRepository()
         getStatisticalTrendUseCase = GetStatisticalTrendUseCase(weightRepository)
+        generateWeightForecastUseCase = GenerateWeightForecastUseCase(weightRepository, goalRepository, getStatisticalTrendUseCase)
         getHistoricalChartDataUseCase = GetHistoricalChartDataUseCase(
             weightRepository = weightRepository,
-            getStatisticalTrendUseCase = getStatisticalTrendUseCase,
+            generateWeightForecastUseCase = generateWeightForecastUseCase,
             defaultDispatcher = Dispatchers.Unconfined
         )
     }

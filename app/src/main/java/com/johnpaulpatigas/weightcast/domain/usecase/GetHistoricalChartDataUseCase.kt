@@ -12,6 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
 class GetHistoricalChartDataUseCase @Inject constructor(
@@ -19,7 +20,27 @@ class GetHistoricalChartDataUseCase @Inject constructor(
     private val generateWeightForecastUseCase: GenerateWeightForecastUseCase,
     @param:DefaultDispatcher private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) {
-    operator fun invoke(timeRange: TimeRange): Flow<List<ChartPoint>> {
+    operator fun invoke(timeRange: TimeRange, includeForecasts: Boolean = true): Flow<List<ChartPoint>> {
+        if (!includeForecasts) {
+            return weightRepository.getAllEntries().map { allEntries ->
+                if (allEntries.isEmpty()) return@map emptyList()
+
+                val sortedAsc = allEntries.sortedBy { it.timestamp }
+                val latestTimestamp = sortedAsc.last().timestamp
+
+                val filteredEntries = TrendCalculator.filterEntriesByTimeRange(
+                    entries = sortedAsc,
+                    range = timeRange,
+                    nowMillis = latestTimestamp
+                )
+
+                IncrementalTheilSenEvaluator.evaluateHistoricalChartPoints(
+                    allEntries = sortedAsc,
+                    targetEntries = filteredEntries
+                )
+            }.flowOn(defaultDispatcher)
+        }
+
         return combine(
             weightRepository.getAllEntries(),
             generateWeightForecastUseCase()

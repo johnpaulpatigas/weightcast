@@ -38,7 +38,7 @@ class DashboardViewModelTest {
         val getTrendUseCase = GetStatisticalTrendUseCase(weightRepository)
         val generateForecastUseCase = GenerateWeightForecastUseCase(weightRepository, goalRepository, getTrendUseCase)
         val getSummaryUseCase = GetDashboardSummaryUseCase(weightRepository, goalRepository, getTrendUseCase, generateForecastUseCase)
-        val getChartDataUseCase = GetHistoricalChartDataUseCase(weightRepository, getTrendUseCase, testDispatcher)
+        val getChartDataUseCase = GetHistoricalChartDataUseCase(weightRepository, generateForecastUseCase, testDispatcher)
 
         viewModel = DashboardViewModel(
             getDashboardSummaryUseCase = getSummaryUseCase,

@@ -20,13 +20,13 @@ WeightCast provides an offline-first forecasting engine for projected weight tra
 For a fitted Theil-Sen regression model with parameters:
 
 - Baseline timestamp $t_0$ (timestamp of the earliest daily representative in the preparation window).
-- Elapsed time in fractional days: $t_i = \frac{\text{timestamp}_i - t_0}{86,400,000.0}$.
+- Elapsed time in fractional days: $t_i = \frac{\text{timestamp}_i - t_0}{86{,}400{,}000.0}$.
 - Estimated slope $\hat{\beta}_1$ (median pairwise slope in KG/day).
 - Estimated intercept $\hat{\beta}_0$ (median residual intercept in KG at $t_0$).
 
 For a forecast horizon $h$ (in days, where $h \in \{7, 30, 90\}$) beyond the forecast origin $t_{\text{eval}}$:
 
-$$t_{\text{target,days}} = t_{\text{eval,days}} + h = \frac{t_{\text{eval}} - t_0}{86,400,000.0} + h$$
+$$t_{\text{target,days}} = t_{\text{eval,days}} + h = \frac{t_{\text{eval}} - t_0}{86{,}400{,}000.0} + h$$
 
 $$\hat{W}(t_{\text{eval}} + h) = \hat{\beta}_0 + \hat{\beta}_1 \cdot t_{\text{target,days}}$$
 
@@ -63,6 +63,7 @@ We implement a non-parametric **Residual Bootstrap with Refitting**:
    c. **Refit** the Theil-Sen model on $(t_i, w_i^{*(b)})$ to obtain bootstrap parameters $\hat{\beta}_0^{*(b)}$ and $\hat{\beta}_1^{*(b)}$.
    d. Draw a random future observation residual $e_{\text{future}}^{*(b)}$ from $\{e_1^c, \dots, e_N^c\}$.
    e. Compute future observation prediction at horizon $h$:
+
       $$W^{*(b)}(t_{\text{eval}} + h) = \hat{\beta}_0^{*(b)} + \hat{\beta}_1^{*(b)} \cdot t_{\text{target,days}} + e_{\text{future}}^{*(b)}$$
 3. **Empirical Quantiles**: For a nominal 95% confidence level ($\alpha = 0.05$), sort $W^{*(1 \dots B)}$:
    - Lower Prediction Bound $L(h)$: 2.5th empirical percentile ($p_{0.025}$).
@@ -114,6 +115,7 @@ Target weight achievement estimates a user's projected arrival date at a target 
    - If $W_{\text{target}} > W_{\text{current}}$ and $\hat{\beta}_1 > 0$: Target is achievable (weight gain).
    - Otherwise: Slope is zero or moving away from target $\rightarrow$ marked **Unavailable** ("Current weight trend is moving away from target goal").
 2. **Estimated Days to Target**:
+
    $$\Delta t_{\text{target}} = \frac{W_{\text{target}} - W_{\text{current,trend}}}{\hat{\beta}_1}$$
 3. **Maximum Horizon Cap**: Maximum allowed target projection is 3,650 days (10 years). Projections beyond 3,650 days are flagged as indeterminate.
 4. **Uncertainty Bounds**: Uses bootstrap slope quantiles $(\hat{\beta}_1^{\text{lower}}, \hat{\beta}_1^{\text{upper}})$ to provide lower and upper bound target dates ($\Delta t_{\text{lower}}, \Delta t_{\text{upper}}$).

@@ -22,7 +22,8 @@ WeightCast uses an authoritative, non-parametric statistical approach to estimat
 
 - Baseline timestamp $t_0$ is established as the earliest valid measurement's timestamp in UTC epoch millis.
 - Normalized elapsed time:
-  $$t_i = \frac{\text{timestamp}_i - t_0}{86,400,000.0} \quad (\text{fractional days})$$
+
+  $$t_i = \frac{\text{timestamp}_i - t_0}{86{,}400{,}000.0} \quad (\text{fractional days})$$
 - The regression intercept $\hat{\beta}_0$ represents the estimated trend weight in KG at the baseline reference timestamp $t_0$.
 
 ## 4. Theil-Sen Robust Regression
@@ -30,18 +31,31 @@ WeightCast uses an authoritative, non-parametric statistical approach to estimat
 For prepared daily measurements $(t_i, w_i)$:
 
 1. **Pairwise Slopes**:
+
    $$s_{ij} = \frac{w_j - w_i}{t_j - t_i} \quad \text{for all } t_j > t_i$$
+
 2. **Median Slope**:
-   $$\hat{\beta}_1 = \text{median}(s_{ij})$$
+
+   $$\hat{\beta}_1 = \operatorname{median}(s_{ij})$$
+
 3. **Median Intercept**:
-   $$\hat{\beta}_0 = \text{median}(w_i - \hat{\beta}_1 \cdot t_i)$$
+
+   $$\hat{\beta}_0 = \operatorname{median}(w_i - \hat{\beta}_1 \cdot t_i)$$
+
 4. **Current Fitted Trend Weight at $t_{\text{eval}}$**:
-   $$t_{\text{eval,days}} = \frac{t_{\text{eval}} - t_0}{86,400,000.0}$$
+
+   $$t_{\text{eval,days}} = \frac{t_{\text{eval}} - t_0}{86{,}400{,}000.0}$$
+
    $$W_{\text{trend,current}} = \hat{\beta}_0 + \hat{\beta}_1 \cdot t_{\text{eval,days}}$$
+
    *Note: If $W_{\text{trend,current}}$ is negative or non-finite, the estimation produces an unavailable `null` result (no silent zero-clamping).*
+
 5. **Weekly Rate of Weight Change**:
+
    $$\Delta W_{\text{week}} = 7.0 \times \hat{\beta}_1$$
+
 6. **Residual Standard Deviation**:
+
    $$s_e = \sqrt{\frac{\sum_{i=1}^{N} (w_i - (\hat{\beta}_0 + \hat{\beta}_1 \cdot t_i))^2}{N - 2}} \quad \text{for } N > 2, \text{ else } 0.0$$
    *Note: $s_e$ is a descriptive statistic measuring residual sample dispersion around the fitted trend line.*
 
@@ -55,6 +69,7 @@ For prepared daily measurements $(t_i, w_i)$:
 | `HIGH_CONFIDENCE` | $N \ge 10$ | $\ge 14$ days | $\ge 50\%$ |
 
 - **Coverage Ratio Definition**:
+
   $$\text{coverageRatio} = \frac{N}{\lfloor\text{timeSpanDays}\rfloor + 1}$$
   Coverage ratio is a temporal measurement-density heuristic. It prevents datasets with sparse multi-month gaps from being misclassified as `HIGH_CONFIDENCE`.
 
@@ -69,16 +84,18 @@ For prepared daily measurements $(t_i, w_i)$:
 
 ## 7. Historical Evaluation Performance & Algorithmic Complexity
 
-Evaluating a single point's Theil-Sen regression requires calculating $\frac{N(N-1)}{2}$ pairwise slopes, resulting in $O(N^2 \log N)$ time complexity due to median sorting.
+Evaluating a single point's Theil-Sen regression requires calculating $\frac{N(N-1)}{2}$ pairwise slopes, resulting in $\mathcal{O}(N^2 \log N)$ time complexity due to median sorting.
 
 Generating a full historical trend line series previously evaluated independent regression models for each timestamp $t_k \le t_N$, yielding an unoptimized baseline complexity of:
-$$\sum_{k=1}^{N} O(k^2 \log k) \approx O(N^3 \log N)$$
+
+$$\sum_{k=1}^{N} \mathcal{O}(k^2 \log k) \approx \mathcal{O}(N^3 \log N)$$
 
 ### Exact Incremental Theil-Sen Evaluation Optimization
 
-To eliminate the $O(N^3 \log N)$ bottleneck without compromising mathematical correctness, `IncrementalTheilSenEvaluator` uses a dual-heap structure (`DoubleMedianTracker`).
-As each daily representative $P_k$ arrives chronologically, its slopes against all preceding $k-1$ representatives are inserted into the dual heap in $O(k \log k)$ time. The median slope is queried in $O(1)$ time, reducing the total historical series generation complexity to:
-$$\sum_{k=1}^{N} O(k \log k) = O(N^2 \log N)$$
+To eliminate the $\mathcal{O}(N^3 \log N)$ bottleneck without compromising mathematical correctness, `IncrementalTheilSenEvaluator` uses a dual-heap structure (`DoubleMedianTracker`).
+As each daily representative $P_k$ arrives chronologically, its slopes against all preceding $k-1$ representatives are inserted into the dual heap in $\mathcal{O}(k \log k)$ time. The median slope is queried in $\mathcal{O}(1)$ time, reducing the total historical series generation complexity to:
+
+$$\sum_{k=1}^{N} \mathcal{O}(k \log k) = \mathcal{O}(N^2 \log N)$$
 
 ### Observed Benchmark Comparison (Complete Historical Chart Data Generation)
 

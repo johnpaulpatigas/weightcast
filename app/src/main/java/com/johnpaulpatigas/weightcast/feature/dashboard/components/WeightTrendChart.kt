@@ -424,11 +424,7 @@ private fun InteractiveChartCanvas(
                     actualPath.moveTo(x, y)
                     firstActual = false
                 } else {
-                    val controlX1 = prevX + (x - prevX) / 2f
-                    val controlY1 = prevY
-                    val controlX2 = prevX + (x - prevX) / 2f
-                    val controlY2 = y
-                    actualPath.cubicTo(controlX1, controlY1, controlX2, controlY2, x, y)
+                    actualPath.lineTo(x, y)
                 }
                 prevX = x
                 prevY = y

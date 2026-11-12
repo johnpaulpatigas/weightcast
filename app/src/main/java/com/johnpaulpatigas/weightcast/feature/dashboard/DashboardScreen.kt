@@ -464,11 +464,7 @@ fun MiniSparklineChart(
                     path.moveTo(x, y)
                     first = false
                 } else {
-                    val controlX1 = prevX + (x - prevX) / 2f
-                    val controlY1 = prevY
-                    val controlX2 = prevX + (x - prevX) / 2f
-                    val controlY2 = y
-                    path.cubicTo(controlX1, controlY1, controlX2, controlY2, x, y)
+                    path.lineTo(x, y)
                 }
                 prevX = x
                 prevY = y

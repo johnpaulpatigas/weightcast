@@ -100,7 +100,8 @@ fun WeightHistoryScreen(
                 // Interactive Chart
                 item {
                     WeightTrendChart(
-                        chartPoints = uiState.chartPoints
+                        chartPoints = uiState.chartPoints,
+                        selectedTimeRange = uiState.selectedTimeRange
                     )
                 }
 

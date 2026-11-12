@@ -46,12 +46,14 @@ import com.johnpaulpatigas.weightcast.core.util.DateTimeUtils
 import com.johnpaulpatigas.weightcast.core.util.WeightConverter
 import com.johnpaulpatigas.weightcast.core.util.formatKg
 import com.johnpaulpatigas.weightcast.domain.model.ChartPoint
+import com.johnpaulpatigas.weightcast.domain.model.TimeRange
 import kotlin.math.abs
 import kotlin.math.max
 
 @Composable
 fun WeightTrendChart(
     chartPoints: List<ChartPoint>,
+    selectedTimeRange: TimeRange? = null,
     modifier: Modifier = Modifier
 ) {
     var selectedPoint by remember(chartPoints) { mutableStateOf<ChartPoint?>(null) }
@@ -178,6 +180,7 @@ fun WeightTrendChart(
             } else {
                 InteractiveChartCanvas(
                     chartPoints = chartPoints,
+                    selectedTimeRange = selectedTimeRange,
                     selectedPoint = selectedPoint,
                     onPointSelected = { selectedPoint = it },
                     modifier = Modifier
@@ -206,6 +209,7 @@ private fun LegendItem(color: Color, label: String) {
 @Composable
 private fun InteractiveChartCanvas(
     chartPoints: List<ChartPoint>,
+    selectedTimeRange: TimeRange?,
     selectedPoint: ChartPoint?,
     onPointSelected: (ChartPoint?) -> Unit,
     modifier: Modifier = Modifier
@@ -248,13 +252,20 @@ private fun InteractiveChartCanvas(
 
                     if (chartPoints.isEmpty()) return@detectTapGestures
 
-                    val minTime = chartPoints.first().timestamp
-                    val maxTime = chartPoints.last().timestamp
+                    val dataMinTime = chartPoints.first().timestamp
+                    val dataMaxTime = chartPoints.last().timestamp
+                    val rangeSpanMs = if (selectedTimeRange != null && selectedTimeRange.days > 0) {
+                        selectedTimeRange.days.toLong() * 24 * 60 * 60 * 1000L
+                    } else {
+                        null
+                    }
+                    val minTime = if (rangeSpanMs != null) dataMaxTime - rangeSpanMs else dataMinTime
+                    val maxTime = dataMaxTime
                     val timeRangeMs = max(1L, maxTime - minTime)
 
                     val touchX = touchOffset.x
                     val nearest = chartPoints.minByOrNull { point ->
-                        val progress = (point.timestamp - minTime).toFloat() / timeRangeMs
+                        val progress = ((point.timestamp - minTime).toFloat() / timeRangeMs).coerceIn(0f, 1f)
                         val px = paddingLeft + (progress * chartWidth)
                         abs(px - touchX)
                     }
@@ -309,12 +320,19 @@ private fun InteractiveChartCanvas(
             return@Canvas
         }
 
-        val minTime = chartPoints.first().timestamp
-        val maxTime = chartPoints.last().timestamp
+        val dataMinTime = chartPoints.first().timestamp
+        val dataMaxTime = chartPoints.last().timestamp
+        val rangeSpanMs = if (selectedTimeRange != null && selectedTimeRange.days > 0) {
+            selectedTimeRange.days.toLong() * 24 * 60 * 60 * 1000L
+        } else {
+            null
+        }
+        val minTime = if (rangeSpanMs != null) dataMaxTime - rangeSpanMs else dataMinTime
+        val maxTime = dataMaxTime
         val timeRangeMs = max(1L, maxTime - minTime)
 
         fun getX(timestamp: Long): Float {
-            val progress = (timestamp - minTime).toFloat() / timeRangeMs
+            val progress = ((timestamp - minTime).toFloat() / timeRangeMs).coerceIn(0f, 1f)
             return paddingLeft + (progress * chartWidth)
         }
 

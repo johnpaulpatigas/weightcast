@@ -11,11 +11,12 @@ object TrendCalculator {
     fun filterEntriesByTimeRange(
         entries: List<WeightEntry>,
         range: TimeRange,
-        nowMillis: Long = System.currentTimeMillis()
+        nowMillis: Long? = null
     ): List<WeightEntry> {
-        if (range == TimeRange.ALL_TIME) return entries.sortedBy { it.timestamp }
+        if (range == TimeRange.ALL_TIME || entries.isEmpty()) return entries.sortedBy { it.timestamp }
 
-        val startTimestamp = range.getStartTimestamp(nowMillis)
+        val referenceTime = nowMillis ?: entries.maxOf { it.timestamp }
+        val startTimestamp = range.getStartTimestamp(referenceTime)
         return entries
             .filter { it.timestamp >= startTimestamp }
             .sortedBy { it.timestamp }

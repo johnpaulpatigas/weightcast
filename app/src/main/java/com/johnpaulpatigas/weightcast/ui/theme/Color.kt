@@ -52,7 +52,7 @@ val OnSecondaryContainerDark = Color(0xFFCCE8E7)
 val TertiaryDark = Color(0xFFCFBCFF)
 val OnTertiaryDark = Color(0xFF381E72)
 val TertiaryContainerDark = Color(0xFF4F378B)
-val OnTertiaryContainerDark = Color(0xEADDFF)
+val OnTertiaryContainerDark = Color(0xFFEADDFF)
 
 val ErrorDark = Color(0xFFFFB4AB)
 val OnErrorDark = Color(0xFF690005)

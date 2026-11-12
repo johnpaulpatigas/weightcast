@@ -2,14 +2,14 @@
 
 ## 1. Statistical Design & Overview
 
-WeightCast provides an offline-first forecasting engine for projected weight trajectory estimation, uncertainty quantification, target date estimation, and rolling backtesting validation.
+WeightCast provides an offline-first forecasting engine for projected weight trajectory estimation, uncertainty quantification, and target date estimation.
 
 ### Core Principles
 
 1. **No Competing Trend Models**: Forecasting uses the authoritative historical Theil-Sen robust linear regression fitted by the existing statistical trend engine as its foundation.
 2. **Explicit Uncertainty Intervals**: Prediction intervals represent empirical prediction uncertainty (slope uncertainty, intercept uncertainty, and residual variation via bootstrap refitting), rather than arbitrary multipliers of standard deviation ($1.96 \times s_e$).
 3. **Strict Forecast Eligibility**: Forecasts are strictly suppressed under insufficient data volume, low data confidence, or unstable historical trends (such as direction reversals or excessive residual scatter).
-4. **Temporal Integrity**: All point forecasts, prediction intervals, target estimates, and backtesting evaluations use a single, explicit forecast-origin timestamp $t_{\text{eval}}$ without future-data leakage.
+4. **Temporal Integrity**: All point forecasts, prediction intervals, and target estimates use a single, explicit forecast-origin timestamp $t_{\text{eval}}$ without future-data leakage.
 
 ---
 
@@ -150,22 +150,9 @@ For historical daily measurements $P_1, P_2, \dots, P_N$:
 
 ---
 
-## 9. Empirical Validation & Backtesting Benchmarks
-
-The backtesting framework was evaluated using synthetic datasets with known statistical parameters:
-
-| Dataset Description | Forecast Horizon | Mean Absolute Error (MAE) | Empirical Coverage (95% CI) | Mean Interval Width |
-| --- | --- | --- | --- | --- |
-| **Constant Weight** ($75\text{kg}, \sigma=0.2\text{kg}$) | 7 Days | $0.12\text{ kg}$ | $95.8\%$ | $0.85\text{ kg}$ |
-| **Constant Weight** ($75\text{kg}, \sigma=0.2\text{kg}$) | 30 Days | $0.21\text{ kg}$ | $94.2\%$ | $1.42\text{ kg}$ |
-| **Consistent Loss** ($-0.07\text{kg/day}, \sigma=0.2\text{kg}$) | 7 Days | $0.18\text{ kg}$ | $96.2\%$ | $0.98\text{ kg}$ |
-| **Consistent Loss** ($-0.07\text{kg/day}, \sigma=0.2\text{kg}$) | 30 Days | $0.54\text{ kg}$ | $93.8\%$ | $2.15\text{ kg}$ |
-| **High Measurement Noise** ($\sigma=0.8\text{kg}$) | 7 Days | $0.52\text{ kg}$ | $94.5\%$ | $3.24\text{ kg}$ |
-| **Single Outlier** ($+15\text{kg}$ spike) | 7 Days | $0.24\text{ kg}$ | $95.0\%$ | $1.12\text{ kg}$ |
-
-### Performance Benchmarks
+## 9. Performance & Validation Benchmarks
 
 - **Incremental Historical Trend Generation ($N=500$)**: ~18.5 ms.
-- **Analytical Chart Projections ($N=500$)**: $< 0.1$ ms.
+- **Analytical Chart Projections ($N=500$)**: < 0.1 ms.
 - **Full Residual Bootstrap ($B=500, N=100$)**: ~12.4 ms on CPU (`Dispatchers.Default`).
-- **All 146 Unit Tests**: 100% Passing.
+- **Unit Test Suite**: 100% Passing.

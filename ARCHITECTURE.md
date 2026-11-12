@@ -17,8 +17,7 @@ app/src/main/java/com/johnpaulpatigas/weightcast/
 ├── domain/                # Business logic, domain models, use cases, statistical engine
 │   ├── model/             # WeightEntry, WeightGoal, DashboardSummary, ChartPoint, TimeRange
 │   ├── repository/        # Repository interfaces
-│   ├── forecast/          # Forecasting engine, bootstrap prediction intervals, eligibility, backtesting
-│   │   ├── backtest/      # Historical forecast backtester
+│   ├── forecast/          # Forecasting engine, bootstrap prediction intervals, eligibility
 │   │   ├── engine/        # ForecastingEngine, PredictionIntervalEstimator, ForecastEligibilityEvaluator, TargetAchievementEstimator
 │   │   └── model/         # WeightForecast, ForecastHorizon, PredictionInterval, ForecastAvailability, TargetAchievementEstimate
 │   ├── trend/             # Pure Kotlin Statistical Engine

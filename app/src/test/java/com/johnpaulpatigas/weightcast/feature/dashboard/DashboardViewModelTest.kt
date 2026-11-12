@@ -56,7 +56,7 @@ class DashboardViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
         val state = viewModel.uiState.value
         assertFalse(state.isLoading)
-        assertEquals(TimeRange.MONTHS_1, state.selectedTimeRange)
+        assertEquals(TimeRange.WEEKS_1, state.selectedTimeRange)
     }
 
     @Test

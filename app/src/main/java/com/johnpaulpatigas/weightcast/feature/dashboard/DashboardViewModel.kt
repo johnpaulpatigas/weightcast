@@ -22,7 +22,7 @@ class DashboardViewModel @Inject constructor(
     private val getHistoricalChartDataUseCase: GetHistoricalChartDataUseCase
 ) : ViewModel() {
 
-    private val _selectedTimeRange = MutableStateFlow(TimeRange.MONTHS_1)
+    private val _selectedTimeRange = MutableStateFlow(TimeRange.WEEKS_1)
 
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()

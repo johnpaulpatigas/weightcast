@@ -97,16 +97,6 @@ fun DashboardScreen(
                 )
             )
         },
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = onQuickAddClick,
-                icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text("Log Weight", fontWeight = FontWeight.Bold) },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                shape = MaterialTheme.shapes.large
-            )
-        },
         contentWindowInsets = WindowInsets(0.dp),
         modifier = modifier
     ) { paddingValues ->

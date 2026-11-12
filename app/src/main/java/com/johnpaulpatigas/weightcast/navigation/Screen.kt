@@ -12,6 +12,7 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
     data object Goals : Screen("goals", "Goals & Settings", Icons.Default.Flag)
 
     companion object {
-        val bottomNavItems = listOf(Dashboard, Analytics, Goals)
+        val bottomNavItems: List<Screen>
+            get() = listOf(Dashboard, Analytics, Goals)
     }
 }

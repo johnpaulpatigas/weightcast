@@ -132,7 +132,7 @@ class ProductionStatisticalTrendIntegrationTest {
             )
         }
 
-        val chartData7d = getHistoricalChartDataUseCase(TimeRange.DAYS_7).first()
+        val chartData7d = getHistoricalChartDataUseCase(TimeRange.WEEKS_1).first()
         assertTrue(chartData7d.size <= 12)
         assertNotNull(chartData7d.first().actualWeightInKg)
         assertNotNull(chartData7d.first().smoothedTrendInKg)

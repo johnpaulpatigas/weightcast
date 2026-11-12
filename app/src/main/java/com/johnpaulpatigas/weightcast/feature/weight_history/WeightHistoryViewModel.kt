@@ -25,7 +25,7 @@ class WeightHistoryViewModel @Inject constructor(
     private val deleteWeightEntryUseCase: DeleteWeightEntryUseCase
 ) : ViewModel() {
 
-    private val _selectedTimeRange = MutableStateFlow(TimeRange.DAYS_30)
+    private val _selectedTimeRange = MutableStateFlow(TimeRange.MONTHS_1)
 
     private val _uiState = MutableStateFlow(WeightHistoryUiState())
     val uiState: StateFlow<WeightHistoryUiState> = _uiState.asStateFlow()

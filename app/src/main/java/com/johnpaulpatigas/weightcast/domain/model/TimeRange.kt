@@ -1,10 +1,9 @@
 package com.johnpaulpatigas.weightcast.domain.model
 
 enum class TimeRange(val label: String, val days: Int) {
-    DAYS_7("7D", 7),
-    DAYS_30("30D", 30),
-    DAYS_90("90D", 90),
-    MONTHS_6("6M", 180),
+    WEEKS_1("1W", 7),
+    MONTHS_1("1M", 30),
+    MONTHS_3("3M", 90),
     YEAR_1("1Y", 365),
     ALL_TIME("All", -1);
 

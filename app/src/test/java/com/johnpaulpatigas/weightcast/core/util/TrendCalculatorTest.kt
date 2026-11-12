@@ -18,7 +18,7 @@ class TrendCalculatorTest {
             WeightEntry(id = 2, weightInKg = 78.0, originalUnit = WeightUnit.KG, timestamp = now - (5 * dayMs))   // 5 days ago
         )
 
-        val filtered7d = TrendCalculator.filterEntriesByTimeRange(entries, TimeRange.DAYS_7, nowMillis = now)
+        val filtered7d = TrendCalculator.filterEntriesByTimeRange(entries, TimeRange.WEEKS_1, nowMillis = now)
         assertEquals(1, filtered7d.size)
         assertEquals(78.0, filtered7d.first().weightInKg, 0.001)
 

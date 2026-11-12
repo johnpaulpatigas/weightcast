@@ -56,14 +56,14 @@ class DashboardViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
         val state = viewModel.uiState.value
         assertFalse(state.isLoading)
-        assertEquals(TimeRange.DAYS_30, state.selectedTimeRange)
+        assertEquals(TimeRange.MONTHS_1, state.selectedTimeRange)
     }
 
     @Test
     fun `onTimeRangeSelected updates selectedTimeRange`() = runTest {
-        viewModel.onTimeRangeSelected(TimeRange.DAYS_90)
+        viewModel.onTimeRangeSelected(TimeRange.MONTHS_3)
         testDispatcher.scheduler.advanceUntilIdle()
-        assertEquals(TimeRange.DAYS_90, viewModel.uiState.value.selectedTimeRange)
+        assertEquals(TimeRange.MONTHS_3, viewModel.uiState.value.selectedTimeRange)
     }
 
     @Test

@@ -6,7 +6,7 @@ import com.johnpaulpatigas.weightcast.domain.model.TimeRange
 
 data class DashboardUiState(
     val summary: DashboardSummary = DashboardSummary(),
-    val selectedTimeRange: TimeRange = TimeRange.DAYS_30,
+    val selectedTimeRange: TimeRange = TimeRange.MONTHS_1,
     val chartPoints: List<ChartPoint> = emptyList(),
     val isLoading: Boolean = true
 )

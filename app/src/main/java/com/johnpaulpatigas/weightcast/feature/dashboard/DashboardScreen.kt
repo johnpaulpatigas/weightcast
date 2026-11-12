@@ -135,7 +135,8 @@ fun DashboardScreen(
             // 3. Weight Trajectory & Forecast Section Card
             item {
                 ForecastSectionCard(
-                    summary = uiState.summary
+                    summary = uiState.summary,
+                    onForecastClick = onNavigateToAnalytics
                 )
             }
 
@@ -627,7 +628,8 @@ fun GoalProgressCard(
 
 @Composable
 fun ForecastSectionCard(
-    summary: DashboardSummary
+    summary: DashboardSummary,
+    onForecastClick: () -> Unit = {}
 ) {
     val forecastResult = summary.forecastResult
     val overallAvailability = forecastResult?.overallAvailability
@@ -704,6 +706,7 @@ fun ForecastSectionCard(
                         ForecastItemCard(
                             horizon = horizon,
                             forecast = wf,
+                            onClick = onForecastClick,
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -717,11 +720,13 @@ fun ForecastSectionCard(
 private fun ForecastItemCard(
     horizon: ForecastHorizon,
     forecast: WeightForecast?,
+    onClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val isAvailable = forecast?.isAvailable == true
 
     Surface(
+        onClick = onClick,
         modifier = modifier,
         shape = MaterialTheme.shapes.medium,
         color = if (isAvailable) MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surfaceContainerLow

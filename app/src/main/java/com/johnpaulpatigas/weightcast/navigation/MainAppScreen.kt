@@ -248,7 +248,7 @@ fun MainAppScreen(
                 Spacer(modifier = Modifier.width(10.dp))
 
                 // Floating Log Weight Squircle FAB (same height as navigation pill)
-                val squircleCorner = navPillHeightDp * 0.38f
+                val squircleCorner = 16.dp
                 Surface(
                     onClick = { loggingViewModel.onOpenAddForm() },
                     shape = RoundedCornerShape(squircleCorner),

@@ -17,6 +17,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -32,6 +35,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -164,7 +170,10 @@ fun MainAppScreen(
                 }
             }
 
-            // Floating Navigation FAB Pill + Quick Add FAB
+            val density = LocalDensity.current
+            var navPillHeightDp by remember { mutableStateOf(52.dp) }
+
+            // Floating Navigation FAB Pill + Quick Add Squircle FAB
             Row(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
@@ -178,7 +187,14 @@ fun MainAppScreen(
                     shape = CircleShape,
                     color = MaterialTheme.colorScheme.surfaceContainerHighest,
                     tonalElevation = 6.dp,
-                    shadowElevation = 8.dp
+                    shadowElevation = 8.dp,
+                    modifier = Modifier.onSizeChanged { size ->
+                        if (size.height > 0) {
+                            with(density) {
+                                navPillHeightDp = size.height.toDp()
+                            }
+                        }
+                    }
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 6.dp),
@@ -231,20 +247,27 @@ fun MainAppScreen(
 
                 Spacer(modifier = Modifier.width(10.dp))
 
-                // Floating Log Weight FAB
-                FloatingActionButton(
+                // Floating Log Weight Squircle FAB (same height as navigation pill)
+                val squircleCorner = navPillHeightDp * 0.38f
+                Surface(
                     onClick = { loggingViewModel.onOpenAddForm() },
-                    shape = CircleShape,
-                    containerColor = MaterialTheme.colorScheme.primary,
+                    shape = RoundedCornerShape(squircleCorner),
+                    color = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary,
-                    elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 6.dp),
-                    modifier = Modifier.size(52.dp)
+                    tonalElevation = 6.dp,
+                    shadowElevation = 8.dp,
+                    modifier = Modifier.size(navPillHeightDp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "Log Weight",
-                        modifier = Modifier.size(24.dp)
-                    )
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Log Weight",
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
                 }
             }
         }

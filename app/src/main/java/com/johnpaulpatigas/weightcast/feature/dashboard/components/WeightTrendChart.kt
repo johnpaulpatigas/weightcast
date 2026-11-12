@@ -259,8 +259,8 @@ private fun InteractiveChartCanvas(
                     } else {
                         null
                     }
-                    val minTime = if (rangeSpanMs != null) dataMaxTime - rangeSpanMs else dataMinTime
-                    val maxTime = dataMaxTime
+                    val minTime = dataMinTime
+                    val maxTime = if (rangeSpanMs != null) max(dataMaxTime, dataMinTime + rangeSpanMs) else dataMaxTime
                     val timeRangeMs = max(1L, maxTime - minTime)
 
                     val touchX = touchOffset.x
@@ -327,8 +327,8 @@ private fun InteractiveChartCanvas(
         } else {
             null
         }
-        val minTime = if (rangeSpanMs != null) dataMaxTime - rangeSpanMs else dataMinTime
-        val maxTime = dataMaxTime
+        val minTime = dataMinTime
+        val maxTime = if (rangeSpanMs != null) max(dataMaxTime, dataMinTime + rangeSpanMs) else dataMaxTime
         val timeRangeMs = max(1L, maxTime - minTime)
 
         fun getX(timestamp: Long): Float {
